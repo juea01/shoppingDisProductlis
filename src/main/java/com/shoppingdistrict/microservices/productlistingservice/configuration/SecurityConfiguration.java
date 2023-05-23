@@ -55,6 +55,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				
 				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/products/**").hasRole("ADMIN").and()
 				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/products/**").hasRole("ADMIN").and()
+				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/comments/**").hasAnyRole("ADMIN", "CUSTOMER").and()
+				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/comments/**").hasAnyRole("ADMIN", "CUSTOMER").and()
 				.authorizeRequests().antMatchers(HttpMethod.GET, "/product-listing-service/products/**").permitAll()
 				.anyRequest().permitAll()
 				.and().csrf().disable() // oauth2 has already taken care of csrf protection
