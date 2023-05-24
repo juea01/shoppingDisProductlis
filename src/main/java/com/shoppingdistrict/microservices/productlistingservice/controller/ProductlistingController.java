@@ -224,6 +224,21 @@ public class ProductlistingController {
 		 
 	}
 	
+	public List<Reply> attachUserToReply(List<Reply> replies) {
+		 logger.info("Attaching users to replies in attachUserToReply");
+		 List<Reply> repliesWithUser = new ArrayList<>();
+		 for (Reply rep: replies) {
+				Users user = new Users();
+				user.setId(rep.getUser().getId());
+				user.setEmail(rep.getUser().getEmail());
+				rep.setUser(user);
+				repliesWithUser.add(rep);
+			}
+		 logger.info("Returning replies with users and exiting from attachUserToReply");
+		 return repliesWithUser;
+		 
+	}
+	
 	@GetMapping("/articles/{articleId}/comments/{commentId}/replies")
 	public List<Reply> retriveRepliesByArticleandCommentId(@PathVariable Integer articleId, @PathVariable Integer commentId) {
 		
@@ -235,12 +250,7 @@ public class ProductlistingController {
 		  * TODO: In future it would be good idea to have DTO classes rather than using Database model classes for transporting data
 		  */
 		
-		for (Reply rep: replies) {
-			Users user = new Users();
-			user.setId(rep.getUser().getId());
-			user.setEmail(rep.getUser().getEmail());
-			rep.setUser(user);
-		}
+		replies = attachUserToReply(replies);	
 		
 		logger.info("Returning replies and exiting from retriveRepliesByArticleandCommentId {}, {}",articleId, commentId );
 		return replies;
@@ -434,9 +444,12 @@ public class ProductlistingController {
 		logger.info("Reply to be created {} for article id {} and comment id {}", reply.getDescription(), reply.getArticle().getId(), reply.getComment().getId());
 		
 		Reply savedReply = replyRepository.saveAndFlush(reply);
+		List<Reply> replies = new ArrayList<>();
+		replies.add(savedReply);
+		replies = attachUserToReply(replies);
 		
-		logger.info("Returning newly created reply id {} {} and exiting from createReply", savedReply.getId(), savedReply);
-		return new ResponseEntity<>(savedReply, HttpStatus.CREATED);
+		logger.info("Returning newly created reply id {} and exiting from createReply", replies.get(0).getId());
+		return new ResponseEntity<>(replies.get(0), HttpStatus.CREATED);
 	}
 	
 	@PutMapping("/articles/comments/replies/{id}")
@@ -449,8 +462,12 @@ public class ProductlistingController {
 		
 		Reply updatedReply = replyRepository.saveAndFlush(existingReply.get());
 		
-		logger.info("Returning newly updated reply id {} {} and exiting from updateReply", updatedReply.getId(), updatedReply);
-		return new ResponseEntity<>(updatedReply, HttpStatus.CREATED);
+		List<Reply> replies = new ArrayList<>();
+		replies.add(updatedReply);
+		replies = attachUserToReply(replies);	
+		
+		logger.info("Returning newly updated reply id {} and exiting from updateReply", replies.get(0).getId());
+		return new ResponseEntity<>(replies.get(0), HttpStatus.CREATED);
 	}
 
 	
@@ -465,14 +482,19 @@ public class ProductlistingController {
 		existingComment.get().setDescription(comment.getDescription());
 		
 		Comment updatedComment = commentRepository.saveAndFlush(existingComment.get());
+		
+		List<Comment> comments = new ArrayList<>();
+		comments.add(updatedComment);
+		
+		comments = attachUserToComment(comments);
 
 //			URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 //					.buildAndExpand(updatedProduct.getId()).toUri();
 
-		logger.info("Returning newly updated comment id {} and exiting from updateComment", updatedComment.getId(),
+		logger.info("Returning newly updated comment id {} and exiting from updateComment", comments.get(0).getId(),
 				updatedComment);
 
-		return new ResponseEntity<>(updatedComment,  HttpStatus.CREATED);
+		return new ResponseEntity<>(comments.get(0),  HttpStatus.CREATED);
 
 	}
 	
