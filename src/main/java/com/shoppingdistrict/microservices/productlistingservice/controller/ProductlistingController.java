@@ -48,6 +48,7 @@ import com.shoppingdistrict.microservices.productlistingservice.repository.Comme
 import com.shoppingdistrict.microservices.productlistingservice.repository.ImageRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ProductRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ReplyRepository;
+import java.sql.Timestamp;
 
 @RestController
 @RequestMapping("/product-listing-service")
@@ -104,6 +105,8 @@ public class ProductlistingController {
 		logger.info("Entry to createProduct");
 
 		logger.info("Product to be created {}", product);
+		product.setPublishDate(new Timestamp(System.currentTimeMillis()));
+		product.setLastEditDate(new Timestamp(System.currentTimeMillis()));
 		Products savedProduct = repository.saveAndFlush(product);
 
 //		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
@@ -165,13 +168,23 @@ public class ProductlistingController {
 
 		List<Articles> articles = articleRepository.findAll();
 		logger.info("Size of all articles", articles.size());
-
-//		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-//				.toUri();
+		
+		 List<Articles> articlesToReturn = new ArrayList<Articles>();
+		 
+		 for (Articles a : articles) {
+			 Articles art = new Articles();
+			 art.setId(a.getId());
+			 art.setCategory(a.getCategory());
+			 art.setSubcategory(a.getSubcategory());
+			 art.setTitle(a.getTitle());
+			 art.setIntroduction(a.getIntroduction());
+			 art.setImages(a.getImages());
+			 articlesToReturn.add(art);
+		 }
 
 		logger.info("Returning articles and exiting from retriveAllArticles");
 
-		return articles;
+		return articlesToReturn;
 
 	}
 	
@@ -258,7 +271,7 @@ public class ProductlistingController {
 	
 	@GetMapping("/articles/subcategory/{subCategory}")
 	public List<Articles> retriveArticleBySubCategory(@PathVariable String subCategory) {
-		logger.info("Entry to retriveArticleBySubCategory");
+		logger.info("Entry to retriveArticleBySubCategory {}", subCategory);
 		
 		//	URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
 		//				.toUri();
@@ -274,6 +287,7 @@ public class ProductlistingController {
 			 /**
 			  * TODO: In future it would be good idea to have DTO classes rather than using Database model classes for transporting data
 			  */
+			logger.info("Number of articles found {} with given subcategory",articles.size());
 			
 			 List<Articles> articlesToReturn = new ArrayList<Articles>();
 			 
@@ -287,7 +301,7 @@ public class ProductlistingController {
 				 art.setImages(a.getImages());
 				 articlesToReturn.add(art);
 			 }
-			 logger.info("Returning article {} and exiting from retriveArticleBySubCategory", subCategory);
+			 logger.info("Returning articles and exiting from retriveArticleBySubCategory");
 			 return articlesToReturn;
 		}
 		
@@ -337,6 +351,8 @@ public class ProductlistingController {
 		logger.info("Entry to createArticle");
 
 		logger.info("Article to be created {}", article);
+		article.setPublishDate(new Timestamp(System.currentTimeMillis()));
+		article.setLastEditDate(new Timestamp(System.currentTimeMillis()));
 		
 		Articles savedArticle = articleRepository.saveAndFlush(article);
 
@@ -365,6 +381,7 @@ public class ProductlistingController {
 			existingArticles.get().setSecondParagraph(article.getSecondParagraph());
 			existingArticles.get().setConclusion(article.getConclusion());
 			existingArticles.get().setSubcategory(article.getSubcategory());
+			existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
 			
 
 			Articles updatedArticle = articleRepository.saveAndFlush(existingArticles.get());
@@ -516,6 +533,7 @@ public class ProductlistingController {
 		existingProduct.get().setFeatures(product.getFeatures());
 		existingProduct.get().setSellerLink(product.getSellerLink());
 		existingProduct.get().setSuitableAudience(product.getSuitableAudience());
+		existingProduct.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
 
 		Products updatedProduct = repository.saveAndFlush(existingProduct.get());
 
