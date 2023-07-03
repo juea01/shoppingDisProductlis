@@ -5,6 +5,9 @@ import java.util.Collections;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,12 +21,25 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import com.shoppingdistrict.microservices.productlistingservice.controller.ProductlistingController;
+
 //import com.example.security.securitydemo.config.KeycloakRoleConverter;
 
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+	
+	private Logger logger = LoggerFactory.getLogger(ProductlistingController.class);
+	
+	@Value("${keycloak.url}")
+	private String keyCloakUrl;
+	
+	@Value("${frontend.url}")
+	private String frontEndUrl;
+	
+	@Value("${gateway.url}")
+	private String gatewayUrl;
 
 	/**
 	 * Please note that for role level security to work two ** need to be put at the end of url.
@@ -32,6 +48,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
+		logger.info("SecurityConfiguration.configure(), allowed Urls {},{},{}",keyCloakUrl, frontEndUrl, gatewayUrl);		
 		JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
 		authenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
 
@@ -42,8 +59,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				// TODO Auto-generated method stub
 				CorsConfiguration config = new CorsConfiguration();
 				config.setAllowedOrigins(
-						Arrays.asList( "http://keycloak:8080",
-								"http://54.226.69.223", "http://54.226.69.223:80", "http://localhost", "http://localhost:80"));
+						Arrays.asList( keyCloakUrl, frontEndUrl));
 				// config.setAllowedOrigins(Collections.singletonList("*"));
 				config.setAllowedMethods(Collections.singletonList("*"));
 				config.setAllowCredentials(true);
