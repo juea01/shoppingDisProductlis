@@ -1,16 +1,14 @@
 package com.shoppingdistrict.microservices.productlistingservice.controller;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.validation.Valid;
+import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,26 +27,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.shoppingdistrict.microservices.model.model.Users;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.shoppingdistrict.microservices.model.model.ArticleImage;
 import com.shoppingdistrict.microservices.model.model.Articles;
 import com.shoppingdistrict.microservices.model.model.Comment;
+import com.shoppingdistrict.microservices.model.model.CompletedQuestion;
 import com.shoppingdistrict.microservices.model.model.Image;
-import com.shoppingdistrict.microservices.model.model.Orders;
-import com.shoppingdistrict.microservices.model.model.Reply;
 import com.shoppingdistrict.microservices.model.model.Products;
+import com.shoppingdistrict.microservices.model.model.Question;
+import com.shoppingdistrict.microservices.model.model.Reply;
+import com.shoppingdistrict.microservices.model.model.Subject;
+import com.shoppingdistrict.microservices.model.model.UserSubject;
+import com.shoppingdistrict.microservices.model.model.Users;
 import com.shoppingdistrict.microservices.productlistingservice.configuration.Configuration;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ArticleImageRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ArticleRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.CommentRepository;
+import com.shoppingdistrict.microservices.productlistingservice.repository.CompletedQuestionRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ImageRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ProductRepository;
+import com.shoppingdistrict.microservices.productlistingservice.repository.QuestionRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ReplyRepository;
-import java.sql.Timestamp;
+import com.shoppingdistrict.microservices.productlistingservice.repository.SubjectRepository;
+import com.shoppingdistrict.microservices.productlistingservice.repository.UserSubjectRepository;
+
+import commonModule.ApiResponse;
 
 @RestController
 @RequestMapping("/product-listing-service")
@@ -64,26 +69,38 @@ public class ProductlistingController {
 
 	@Autowired
 	private ArticleRepository articleRepository;
-	
+
 	@Autowired
 	private CommentRepository commentRepository;
-	
+
 	@Autowired
 	private ReplyRepository replyRepository;
-	
+
 	@Autowired
 	private ImageRepository imageRepository;
-	
+
 	@Autowired
 	private ArticleImageRepository articleImageRepository;
 
 	@Autowired
-	private Configuration configuration;
+	private QuestionRepository questionRepository;
+
+	@Autowired
+	private SubjectRepository subjectRepository;
+
+	@Autowired
+	private UserSubjectRepository userSubjectRepository;
 	
 	@Autowired
+	private CompletedQuestionRepository completedQuestionRepository;
+
+	@Autowired
+	private Configuration configuration;
+
+	@Autowired
 	private AmazonS3 amazonS3;
-	
-	private String s3BucketName = "tech-district-nanobit"; 
+
+	private String s3BucketName = "tech-district-nanobit";
 
 	// retrieveOrder
 	@GetMapping("/products/{id}")
@@ -118,46 +135,47 @@ public class ProductlistingController {
 		return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
 
 	}
-	
+
 	@PostMapping("/products/images")
-	public List<Image> uploadImage(@RequestParam("file") List<MultipartFile> files, @RequestParam("productId") Integer productId) throws IOException {
-		
+	public List<Image> uploadImage(@RequestParam("file") List<MultipartFile> files,
+			@RequestParam("productId") Integer productId) throws IOException {
+
 		List<Image> images = new ArrayList<>();
-		
-		for (MultipartFile file: files) {
-		
-			//upload image to AWS s3 bucket
+
+		for (MultipartFile file : files) {
+
+			// upload image to AWS s3 bucket
 			String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 			String key = UUID.randomUUID().toString() + "-" + fileName;
-			
+
 			ObjectMetadata metadata = new ObjectMetadata();
 			metadata.setContentType(file.getContentType());
 			metadata.setContentLength(file.getSize());
 			amazonS3.putObject(s3BucketName, key, file.getInputStream(), metadata);
 			String url = amazonS3.getUrl(s3BucketName, key).toString();
-			
-			//save image metadata in database
+
+			// save image metadata in database
 			Image image = new Image();
 			image.setLocation(url);
 			image.setName(fileName);
-			
+
 			Products product = new Products();
 			product.setId(productId);
 			image.setProduct(product);
 			images.add(imageRepository.saveAndFlush(image));
-			
+
 		}
-		
+
 		return images;
-		
+
 	}
-	
+
 	@DeleteMapping("/products/images/{id}")
-    public ResponseEntity<String> deleteImageById(@PathVariable Integer id) {
+	public ResponseEntity<String> deleteImageById(@PathVariable Integer id) {
 		logger.info("Entry to deleteImageById", id);
-		
+
 		imageRepository.deleteById(id);
-		
+
 		logger.info("Sucessfully deleted image with id {} and exiting from deleteImageById", id);
 		return ResponseEntity.ok("{\"message\":\"Image deleted sucessfully\"}");
 	}
@@ -168,184 +186,247 @@ public class ProductlistingController {
 
 		List<Articles> articles = articleRepository.findAll();
 		logger.info("Size of all articles", articles.size());
-		
-		 List<Articles> articlesToReturn = new ArrayList<Articles>();
-		 
-		 for (Articles a : articles) {
-			 Articles art = new Articles();
-			 art.setId(a.getId());
-			 art.setCategory(a.getCategory());
-			 art.setSubcategory(a.getSubcategory());
-			 art.setTitle(a.getTitle());
-			 art.setIntroduction(a.getIntroduction());
-			 art.setImages(a.getImages());
-			 articlesToReturn.add(art);
-		 }
+
+		List<Articles> articlesToReturn = new ArrayList<Articles>();
+
+		for (Articles a : articles) {
+			Articles art = new Articles();
+			art.setId(a.getId());
+			art.setCategory(a.getCategory());
+			art.setSubcategory(a.getSubcategory());
+			art.setTitle(a.getTitle());
+			art.setIntroduction(a.getIntroduction());
+			art.setImages(a.getImages());
+			articlesToReturn.add(art);
+		}
 
 		logger.info("Returning articles and exiting from retriveAllArticles");
 
 		return articlesToReturn;
 
 	}
-	
+
 	@GetMapping("/articles/{id}")
 	public Articles retriveArticleById(@PathVariable Integer id) {
 		logger.info("Entry to retriveArticleById");
-		
-		//	URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-		//				.toUri();
 
+		// URI uri =
+		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
+		// .toUri();
 
 		Optional<Articles> article = articleRepository.findById(id);
-		
+
 		if (article.isEmpty()) {
 			logger.info("Article with given id {} not found", id);
 			return null;
 		} else {
-			
-			 Articles articles = article.get();
-			 List<Comment> comments = articles.getComments();
-			 
-			 /**
-			  * TODO: In future it would be good idea to have DTO classes rather than using Database model classes for transporting data
-			  */
-			
-			
-			 articles.setComments(attachUserToComment(comments));
-			 
-			 logger.info("Returning article {} and exiting from retriveArticleById", id);
-			 return articles;
+
+			Articles articles = article.get();
+			List<Comment> comments = articles.getComments();
+
+			/**
+			 * TODO: In future it would be good idea to have DTO classes rather than using
+			 * Database model classes for transporting data
+			 */
+
+			articles.setComments(attachUserToComment(comments));
+
+			logger.info("Returning article {} and exiting from retriveArticleById", id);
+			return articles;
 		}
-		
+
 	}
-	
+
 	public List<Comment> attachUserToComment(List<Comment> comments) {
-		 logger.info("Attaching users to comments in attachUserToComment");
-		 List<Comment> commentsWithUser = new ArrayList<>();
-		 for (Comment comment : comments) {
-			 Users user = new Users();
-			 logger.info("user Id:",comment.getUser().getId());
-			 user.setId(  comment.getUser().getId());
-			 user.setEmail(comment.getUser().getEmail());
-			 
-			 comment.setUser(user);
-			 comment.setReply(null);
-			 commentsWithUser.add(comment);
-		 }
-		 logger.info("Returning comments with users and exiting from attachUserToComment");
-		 return commentsWithUser;
-		 
+		logger.info("Attaching users to comments in attachUserToComment");
+		List<Comment> commentsWithUser = new ArrayList<>();
+		for (Comment comment : comments) {
+			Users user = new Users();
+			logger.info("user Id:", comment.getUser().getId());
+			user.setId(comment.getUser().getId());
+			user.setEmail(comment.getUser().getEmail());
+
+			comment.setUser(user);
+			comment.setReply(null);
+			commentsWithUser.add(comment);
+		}
+		logger.info("Returning comments with users and exiting from attachUserToComment");
+		return commentsWithUser;
+
 	}
-	
+
 	public List<Reply> attachUserToReply(List<Reply> replies) {
-		 logger.info("Attaching users to replies in attachUserToReply");
-		 List<Reply> repliesWithUser = new ArrayList<>();
-		 for (Reply rep: replies) {
-				Users user = new Users();
-				user.setId(rep.getUser().getId());
-				user.setEmail(rep.getUser().getEmail());
-				rep.setUser(user);
-				repliesWithUser.add(rep);
-			}
-		 logger.info("Returning replies with users and exiting from attachUserToReply");
-		 return repliesWithUser;
-		 
+		logger.info("Attaching users to replies in attachUserToReply");
+		List<Reply> repliesWithUser = new ArrayList<>();
+		for (Reply rep : replies) {
+			Users user = new Users();
+			user.setId(rep.getUser().getId());
+			user.setEmail(rep.getUser().getEmail());
+			rep.setUser(user);
+			repliesWithUser.add(rep);
+		}
+		logger.info("Returning replies with users and exiting from attachUserToReply");
+		return repliesWithUser;
+
+	}
+
+	public void attachUserToUserSubject(List<UserSubject> userSubjects) {
+		logger.info("Attaching users to userSubject in attachUserToUserSubject");
+		for (UserSubject us : userSubjects) {
+			Users user = new Users();
+			user.setId(us.getUser().getId());
+			us.setUser(user);
+		}
+		logger.info("Have attached users to user subject and exiting from attachUserToUserSubject");
+	}
+
+	public void attachSubjectToUserSubject(List<UserSubject> userSubjects) {
+		logger.info("Attaching subject to userSubject in attachSubjectToUserSubject");
+		for (UserSubject us : userSubjects) {
+			Subject subject = new Subject();
+			subject.setId(us.getSubject().getId());
+			us.setSubject(subject);
+		}
+		logger.info("Have attached subject to user subject and exiting from attachSubjectToUserSubject");
 	}
 	
+	/**
+	 * This method is used for replacing instance of  Subject class with nearly all fields value populated 
+	 * (that is not needed for this scenario) and replacing
+	 * that instance with Subject object that only have id field value populated. 
+	 * @param questions  List of Question objects which Subject instance are going to be replaced.
+	 */
+	public void attachSubjectToQuestion(List<Question> questions) {
+		logger.info("Attaching subject ids to question in attachSubjectToQuestion");
+		for (Question qu : questions) {
+			Subject subject = new Subject();
+			subject.setId(qu.getSubject().getId());
+			qu.setSubject(subject);
+		}
+		logger.info("Have attached subject ids to question and exiting from attachSubjectToQuestion");
+	}
+
+	public void attachArticleToQuestion(List<Question> questions) {
+		logger.info("Attaching article ids to question in attachArticleToQuestion");
+		for (Question qu : questions) {
+			Articles article = new Articles();
+			article.setId(qu.getArticle().getId());
+			qu.setArticle(article);
+		}
+		logger.info("Have attached article ids to question and exiting from attachArticleToQuestion");
+	}
+
+	public void attachQuestionToCompletedQuestion(List<UserSubject> userSubjects) {
+		logger.info("Attaching question to completed question in attachQuestionToCompletedQuestion");
+		for (UserSubject us : userSubjects) {
+			for (CompletedQuestion cs : us.getCompletedQuestions()) {
+				Question question = new Question();
+				question.setId(cs.getQuestion().getId());
+				cs.setQuestion(question);
+			}
+
+		}
+		logger.info("Have attached question to completed question and exiting from attachQuestionToCompletedQuestion");
+	}
+
 	@GetMapping("/articles/{articleId}/comments/{commentId}/replies")
-	public List<Reply> retriveRepliesByArticleandCommentId(@PathVariable Integer articleId, @PathVariable Integer commentId) {
-		
-		logger.info("Entries to retriveRepliesByArticleandCommentId {}, {}",articleId, commentId );
-		List<Reply> replies = replyRepository.findByArticleIdAndCommentId(articleId, commentId );
-		logger.info("Size of all replies {} by article id {} and comment id{}", replies.size(), articleId, commentId );
-		
-		 /**
-		  * TODO: In future it would be good idea to have DTO classes rather than using Database model classes for transporting data
-		  */
-		
-		replies = attachUserToReply(replies);	
-		
-		logger.info("Returning replies and exiting from retriveRepliesByArticleandCommentId {}, {}",articleId, commentId );
+	public List<Reply> retriveRepliesByArticleandCommentId(@PathVariable Integer articleId,
+			@PathVariable Integer commentId) {
+
+		logger.info("Entries to retriveRepliesByArticleandCommentId {}, {}", articleId, commentId);
+		List<Reply> replies = replyRepository.findByArticleIdAndCommentId(articleId, commentId);
+		logger.info("Size of all replies {} by article id {} and comment id{}", replies.size(), articleId, commentId);
+
+		/**
+		 * TODO: In future it would be good idea to have DTO classes rather than using
+		 * Database model classes for transporting data
+		 */
+
+		replies = attachUserToReply(replies);
+
+		logger.info("Returning replies and exiting from retriveRepliesByArticleandCommentId {}, {}", articleId,
+				commentId);
 		return replies;
 	}
-	
+
 	@GetMapping("/articles/subcategory/{subCategory}")
 	public List<Articles> retriveArticleBySubCategory(@PathVariable String subCategory) {
 		logger.info("Entry to retriveArticleBySubCategory {}", subCategory);
-		
-		//	URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-		//				.toUri();
 
+		// URI uri =
+		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
+		// .toUri();
 
-		 List<Articles> articles = articleRepository.findBySubcategory(subCategory);
-		
+		List<Articles> articles = articleRepository.findBySubcategory(subCategory);
+
 		if (articles.isEmpty()) {
 			logger.info("Article with given sub category {} not found", subCategory);
 			return null;
 		} else {
-			
-			 /**
-			  * TODO: In future it would be good idea to have DTO classes rather than using Database model classes for transporting data
-			  */
-			logger.info("Number of articles found {} with given subcategory",articles.size());
-			
-			 List<Articles> articlesToReturn = new ArrayList<Articles>();
-			 
-			 for (Articles a : articles) {
-				 Articles art = new Articles();
-				 art.setId(a.getId());
-				 art.setCategory(a.getCategory());
-				 art.setSubcategory(a.getSubcategory());
-				 art.setTitle(a.getTitle());
-				 art.setIntroduction(a.getIntroduction());
-				 art.setImages(a.getImages());
-				 articlesToReturn.add(art);
-			 }
-			 logger.info("Returning articles and exiting from retriveArticleBySubCategory");
-			 return articlesToReturn;
+
+			/**
+			 * TODO: In future it would be good idea to have DTO classes rather than using
+			 * Database model classes for transporting data
+			 */
+			logger.info("Number of articles found {} with given subcategory", articles.size());
+
+			List<Articles> articlesToReturn = new ArrayList<Articles>();
+
+			for (Articles a : articles) {
+				Articles art = new Articles();
+				art.setId(a.getId());
+				art.setCategory(a.getCategory());
+				art.setSubcategory(a.getSubcategory());
+				art.setTitle(a.getTitle());
+				art.setIntroduction(a.getIntroduction());
+				art.setImages(a.getImages());
+				articlesToReturn.add(art);
+			}
+			logger.info("Returning articles and exiting from retriveArticleBySubCategory");
+			return articlesToReturn;
 		}
-		
+
 	}
-	
 
 	@GetMapping("/articles/search/{searchCategory}")
 	public List<Articles> searchArticle(@PathVariable String searchCategory) {
 		logger.info("Entry to searchArticle");
-		
-		//	URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-		//				.toUri();
 
+		// URI uri =
+		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
+		// .toUri();
 
-		 List<Articles> articles = articleRepository.findByTitleLikeOrCategoryLikeOrSubcategoryLike(searchCategory, searchCategory, searchCategory);
-		
+		List<Articles> articles = articleRepository.findByTitleLikeOrCategoryLikeOrSubcategoryLike(searchCategory,
+				searchCategory, searchCategory);
+
 		if (articles.isEmpty()) {
 			logger.info("Article with given search value {} not found", searchCategory);
 			return null;
 		} else {
-			
-			 /**
-			  * TODO: In future it would be good idea to have DTO classes rather than using Database model classes for transporting data
-			  */
-			
-			 List<Articles> articlesToReturn = new ArrayList<Articles>();
-			 
-			 for (Articles a : articles) {
-				 Articles art = new Articles();
-				 art.setId(a.getId());
-				 art.setCategory(a.getCategory());
-				 art.setSubcategory(a.getSubcategory());
-				 art.setTitle(a.getTitle());
-				 art.setIntroduction(a.getIntroduction());
-				 art.setImages(a.getImages());
-				 articlesToReturn.add(art);
-			 }
-			 logger.info("Returning article {} and exiting from searchArticle", searchCategory);
-			 return articlesToReturn;
+
+			/**
+			 * TODO: In future it would be good idea to have DTO classes rather than using
+			 * Database model classes for transporting data
+			 */
+
+			List<Articles> articlesToReturn = new ArrayList<Articles>();
+
+			for (Articles a : articles) {
+				Articles art = new Articles();
+				art.setId(a.getId());
+				art.setCategory(a.getCategory());
+				art.setSubcategory(a.getSubcategory());
+				art.setTitle(a.getTitle());
+				art.setIntroduction(a.getIntroduction());
+				art.setImages(a.getImages());
+				articlesToReturn.add(art);
+			}
+			logger.info("Returning article {} and exiting from searchArticle", searchCategory);
+			return articlesToReturn;
 		}
-		
+
 	}
-	
-	
+
 	@PostMapping("/articles")
 	public ResponseEntity<Articles> createArticle(@Valid @RequestBody Articles article) {
 		logger.info("Entry to createArticle");
@@ -353,7 +434,7 @@ public class ProductlistingController {
 		logger.info("Article to be created {}", article);
 		article.setPublishDate(new Timestamp(System.currentTimeMillis()));
 		article.setLastEditDate(new Timestamp(System.currentTimeMillis()));
-		
+
 		Articles savedArticle = articleRepository.saveAndFlush(article);
 
 //		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
@@ -365,129 +446,126 @@ public class ProductlistingController {
 		return new ResponseEntity<>(savedArticle, HttpStatus.CREATED);
 
 	}
-	
+
 	// TODO: Shall try and catch here or let error handling component to handle
-		@PutMapping("/articles/{id}")
-		public ResponseEntity<Articles> updateArticle(@Valid @RequestBody Articles article, @PathVariable Integer id) {
-			logger.info("Entry to updateArticle");
+	@PutMapping("/articles/{id}")
+	public ResponseEntity<Articles> updateArticle(@Valid @RequestBody Articles article, @PathVariable Integer id) {
+		logger.info("Entry to updateArticle");
 
-			logger.info("Article to be updated {}", article.getId());
+		logger.info("Article to be updated {}", article.getId());
 
-			Optional<Articles> existingArticles = articleRepository.findById(id);
-			existingArticles.get().setCategory(article.getCategory());
-			existingArticles.get().setTitle(article.getTitle());
-			existingArticles.get().setIntroduction(article.getIntroduction());
-			existingArticles.get().setFirstParagraph(article.getFirstParagraph());
-			existingArticles.get().setSecondParagraph(article.getSecondParagraph());
-			existingArticles.get().setConclusion(article.getConclusion());
-			existingArticles.get().setSubcategory(article.getSubcategory());
-			existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
-			
+		Optional<Articles> existingArticles = articleRepository.findById(id);
+		existingArticles.get().setCategory(article.getCategory());
+		existingArticles.get().setTitle(article.getTitle());
+		existingArticles.get().setIntroduction(article.getIntroduction());
+		existingArticles.get().setFirstParagraph(article.getFirstParagraph());
+		existingArticles.get().setSecondParagraph(article.getSecondParagraph());
+		existingArticles.get().setConclusion(article.getConclusion());
+		existingArticles.get().setSubcategory(article.getSubcategory());
+		existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
 
-			Articles updatedArticle = articleRepository.saveAndFlush(existingArticles.get());
+		Articles updatedArticle = articleRepository.saveAndFlush(existingArticles.get());
 
 //				URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 //						.buildAndExpand(updatedProduct.getId()).toUri();
 
-			logger.info("Returning newly updated article id {} and exiting from updateArticle", updatedArticle.getId(),
-					updatedArticle);
+		logger.info("Returning newly updated article id {} and exiting from updateArticle", updatedArticle.getId(),
+				updatedArticle);
 
-			return new ResponseEntity<>(updatedArticle,  HttpStatus.CREATED);
+		return new ResponseEntity<>(updatedArticle, HttpStatus.CREATED);
 
-		}
+	}
 
-	
-	
 	@PostMapping("/articles/images")
-	public List<ArticleImage> uploadArticleImage(@RequestParam("file") List<MultipartFile> files, @RequestParam("articleId") Integer articleId) throws IOException {
+	public List<ArticleImage> uploadArticleImage(@RequestParam("file") List<MultipartFile> files,
+			@RequestParam("articleId") Integer articleId) throws IOException {
 		logger.info("Entry to uploadArticleImage for article id {}", articleId);
-		
+
 		List<ArticleImage> images = new ArrayList<>();
-		for (MultipartFile file: files) {
-		
-			//upload image to AWS s3 bucket
+		for (MultipartFile file : files) {
+
+			// upload image to AWS s3 bucket
 			String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 			String key = UUID.randomUUID().toString() + "-" + fileName;
-			
+
 			ObjectMetadata metadata = new ObjectMetadata();
 			metadata.setContentType(file.getContentType());
 			metadata.setContentLength(file.getSize());
 			amazonS3.putObject(s3BucketName, key, file.getInputStream(), metadata);
 			String url = amazonS3.getUrl(s3BucketName, key).toString();
-			
-			//save image metadata in database
+
+			// save image metadata in database
 			ArticleImage image = new ArticleImage();
 			image.setLocation(url);
 			image.setName(fileName);
-			
+
 			Articles article = new Articles();
 			article.setId(articleId);
 			image.setArticle(article);
 			images.add(articleImageRepository.saveAndFlush(image));
-			
+
 		}
-		
+
 		logger.info("Sucessfully uploaded images for Article id {} and exiting from uploadArticleImage", articleId);
 		return images;
-		
+
 	}
-	
+
 	@DeleteMapping("/articles/images/{id}")
-    public ResponseEntity<String> deleteArticleImageById(@PathVariable Integer id) {
+	public ResponseEntity<String> deleteArticleImageById(@PathVariable Integer id) {
 		logger.info("Entry to deleteArticleImageById", id);
-		
+
 		articleImageRepository.deleteById(id);
-		
+
 		logger.info("Sucessfully deleted image with id {} and exiting from deleteArticleImageById", id);
 		return ResponseEntity.ok("{\"message\":\"Image deleted sucessfully\"}");
 	}
-	
-	
-	
+
 	@PostMapping("/comments")
 	public ResponseEntity<Comment> createComment(@Valid @RequestBody Comment comment) {
 		logger.info("Entry to createComment");
 		logger.info("Comment to be created {}", comment);
-		
+
 		Comment savedComment = commentRepository.saveAndFlush(comment);
-		
-		logger.info("Returning newly created comment id {} {} and exiting from createComment", savedComment.getId(), savedComment);
+
+		logger.info("Returning newly created comment id {} {} and exiting from createComment", savedComment.getId(),
+				savedComment);
 		return new ResponseEntity<>(savedComment, HttpStatus.CREATED);
 	}
-	
+
 	@PostMapping("/articles/comments/replies")
-	public ResponseEntity<Reply> createReply(@Valid @RequestBody Reply reply ) {
+	public ResponseEntity<Reply> createReply(@Valid @RequestBody Reply reply) {
 		logger.info("Entry to createReply");
-		logger.info("Reply to be created {} for article id {} and comment id {}", reply.getDescription(), reply.getArticle().getId(), reply.getComment().getId());
-		
+		logger.info("Reply to be created {} for article id {} and comment id {}", reply.getDescription(),
+				reply.getArticle().getId(), reply.getComment().getId());
+
 		Reply savedReply = replyRepository.saveAndFlush(reply);
 		List<Reply> replies = new ArrayList<>();
 		replies.add(savedReply);
 		replies = attachUserToReply(replies);
-		
+
 		logger.info("Returning newly created reply id {} and exiting from createReply", replies.get(0).getId());
 		return new ResponseEntity<>(replies.get(0), HttpStatus.CREATED);
 	}
-	
+
 	@PutMapping("/articles/comments/replies/{id}")
-	public ResponseEntity<Reply> updateReply(@Valid @RequestBody Reply reply, @PathVariable Integer id ) {
+	public ResponseEntity<Reply> updateReply(@Valid @RequestBody Reply reply, @PathVariable Integer id) {
 		logger.info("Entry to updateReply");
 		logger.info("Reply {} to be updated for id {} ", reply.getDescription(), id);
-		
+
 		Optional<Reply> existingReply = replyRepository.findById(id);
 		existingReply.get().setDescription(reply.getDescription());
-		
+
 		Reply updatedReply = replyRepository.saveAndFlush(existingReply.get());
-		
+
 		List<Reply> replies = new ArrayList<>();
 		replies.add(updatedReply);
-		replies = attachUserToReply(replies);	
-		
+		replies = attachUserToReply(replies);
+
 		logger.info("Returning newly updated reply id {} and exiting from updateReply", replies.get(0).getId());
 		return new ResponseEntity<>(replies.get(0), HttpStatus.CREATED);
 	}
 
-	
 	// TODO: Shall try and catch here or let error handling component to handle
 	@PutMapping("/comments/{id}")
 	public ResponseEntity<Comment> updateComment(@Valid @RequestBody Comment comment, @PathVariable Integer id) {
@@ -497,12 +575,12 @@ public class ProductlistingController {
 
 		Optional<Comment> existingComment = commentRepository.findById(id);
 		existingComment.get().setDescription(comment.getDescription());
-		
+
 		Comment updatedComment = commentRepository.saveAndFlush(existingComment.get());
-		
+
 		List<Comment> comments = new ArrayList<>();
 		comments.add(updatedComment);
-		
+
 		comments = attachUserToComment(comments);
 
 //			URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
@@ -511,13 +589,9 @@ public class ProductlistingController {
 		logger.info("Returning newly updated comment id {} and exiting from updateComment", comments.get(0).getId(),
 				updatedComment);
 
-		return new ResponseEntity<>(comments.get(0),  HttpStatus.CREATED);
+		return new ResponseEntity<>(comments.get(0), HttpStatus.CREATED);
 
 	}
-	
-	
-	
-	
 
 	// TODO: Shall try and catch here or let error handling component to handle
 	@PutMapping("/products/{id}")
@@ -555,5 +629,112 @@ public class ProductlistingController {
 		logger.info("Returning orders and exiting from retrieveAllProducts");
 		return products;
 	}
+
+	@GetMapping("/subjects/search/{level}")
+	public List<Subject> retrieveSubjectByLevel(@PathVariable("level") int level) {
+		logger.info("Entry to retrieveSubjectByLevel, level {}", level);
+		List<Subject> subjects = subjectRepository.findByLevel(level);
+		logger.info("Size of all subjects", subjects.size());
+		logger.info("Exiting from retrieveSubjectByLevel");
+		return subjects;
+	}
+
+	@GetMapping("/subjects/search/{level}/{category}/{subcategory}")
+	public List<Subject> retrieveSubjectByCategorySubCategoryAndLevel(@PathVariable("level") int level,
+			@PathVariable("category") String category, @PathVariable("subcategory") String subcategory) {
+		logger.info("Entry to retrieveSubjectByCategorySubCategoryAndLevel, level {}, category {}, subcategory {}",
+				level, category, subcategory);
+		List<Subject> subjects = subjectRepository.findByLevelAndCategoryLikeAndSubCategoryLike(level, category,
+				subcategory);
+		logger.info("Size of all subjects", subjects.size());
+		logger.info("Exiting from retrieveSubjectByCategorySubCategoryAndLevel");
+		return subjects;
+	}
+
+	@GetMapping("/questions/search/{subjectId}")
+	public List<Question> retrieveQuestionBySubjectId(@PathVariable("subjectId") int subjectId) {
+		logger.info("Entry to retrieveQuestionBySubjectId, subjectId {}", subjectId);
+		List<Question> questions = questionRepository.findBySubjectId(subjectId);
+		logger.info("Size of all questions", questions.size());
+		attachSubjectToQuestion(questions);
+		attachArticleToQuestion(questions);
+		logger.info("Exiting from retrieveQuestionBySubjectId");
+		return questions;
+	}
+
+	@GetMapping("/userSubject/{userId}")
+	public List<UserSubject> retrieveUserSubjectsByUserId(@PathVariable("userId") int userId) {
+		logger.info("Entry to retrieveUserSubjectsByUserId, userId {}", userId);
+		List<UserSubject> userSubjects = userSubjectRepository.findByUserId(userId);
+		attachUserToUserSubject(userSubjects);
+		attachSubjectToUserSubject(userSubjects);
+		attachQuestionToCompletedQuestion(userSubjects);
+		logger.info("Size of all User Subject records", userSubjects.size());
+		logger.info("Exiting from retrieveUserSubjectsByUserId");
+		return userSubjects;
+	}
+	
+	@GetMapping("/userSubject/{userId}/{subjectId}")
+	public ResponseEntity<UserSubject> retrieveUserSubjectsByUserIdAndSubjectId(@PathVariable("userId") int userId, @PathVariable("subjectId") int subjectId) {
+		logger.info("Entry to retrieveUserSubjectsByUserIdAndSubjectId, userId {} and subject id {}", userId, subjectId);
+		UserSubject userSubject = userSubjectRepository.findByUserIdAndSubjectId(userId, subjectId);
+		if(userSubject==null) {
+			logger.info("No active user subject found with given user id and subject id.");
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		} else {
+			List<UserSubject> userSubjects = new ArrayList<UserSubject>();
+			userSubjects.add(userSubject);
+			logger.info("Number of user subject found {}", userSubjects.size());
+			
+			attachUserToUserSubject(userSubjects);
+			attachSubjectToUserSubject(userSubjects);
+			attachQuestionToCompletedQuestion(userSubjects);
+			
+			
+			logger.info("Exiting from retrieveUserSubjectsByUserIdAndSubjectId");
+			return ResponseEntity.status(HttpStatus.OK).body(userSubject);
+		}
+	}
+	
+	@PostMapping("/userSubject")
+	public UserSubject createUserSubject(@Valid @RequestBody UserSubject userSubject) {
+		logger.info("Entry to createUserSubject for user id {} and subject id {}", userSubject.getUser().getId(), userSubject.getSubject().getId());
+		UserSubject savedUserSubject = new UserSubject();
+		savedUserSubject.setId(userSubjectRepository.saveAndFlush(userSubject).getId());
+		logger.info("Returning newly created user subject which id is {} and exiting from createUserSubject", savedUserSubject.getId());
+		return savedUserSubject;
+	}
+	
+	/**
+	 * This method is allow to update/alter two properties, completed and enabled, of UserSubject class instance.
+	 * Both or either of those two properties value can be updated.
+	 * @param userSubject  Instance of UserSubject class that need to be updated in database.
+	 * @return HTTP Status 204 with ApiResponse object that contain success message.
+	 */
+	@PutMapping("/userSubject")
+	public ResponseEntity<ApiResponse> updateUserSubject(@Valid @RequestBody UserSubject userSubject) {
+		logger.info("Entry to updateUserSubject for user_subject id {}", userSubject.getId());
+		
+		Optional<UserSubject> existingUserSubject = userSubjectRepository.findById(userSubject.getId());
+		existingUserSubject.get().setCompleted(userSubject.isCompleted());
+		existingUserSubject.get().setEnabled(userSubject.getEnabled());
+		userSubjectRepository.saveAndFlush(existingUserSubject.get());
+		
+		ApiResponse response = new ApiResponse("User Subject updated successfully.", null);
+		logger.info("Successfully update user subject and exiting from updateUserSubject", userSubject.getId());
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
+	}
+	
+	@PostMapping("/userSubject/progress")
+	public ResponseEntity<ApiResponse> createSubjectProgress(@Valid @RequestBody List<CompletedQuestion> completedQuestions) {
+		logger.info("Entry to createSubjectProgress for user subject id {} and number of completed questions {} to be created", completedQuestions.get(0).getUserSubject().getId(), completedQuestions.size() );
+		List<CompletedQuestion> savedComQuestions = completedQuestionRepository.saveAll(completedQuestions);
+		logger.info("{} completed question saved successfully", savedComQuestions.size());
+		ApiResponse response = new ApiResponse("Completed Questions successfully saved.", null);
+		logger.info("Exiting from createSubjectProgress");
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+	
+	
 
 }
