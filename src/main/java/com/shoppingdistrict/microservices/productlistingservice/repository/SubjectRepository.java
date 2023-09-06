@@ -11,5 +11,7 @@ public interface SubjectRepository extends JpaRepository<Subject, Integer> {
 	List<Subject> findByLevel(int level);
 
 	List<Subject> findByLevelAndCategoryLikeAndSubCategoryLike(int level, String category, String subCategory);
+	
+	
 
 }

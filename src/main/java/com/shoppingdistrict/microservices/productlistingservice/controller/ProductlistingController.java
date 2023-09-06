@@ -37,6 +37,7 @@ import com.shoppingdistrict.microservices.model.model.CompletedQuestion;
 import com.shoppingdistrict.microservices.model.model.Image;
 import com.shoppingdistrict.microservices.model.model.Products;
 import com.shoppingdistrict.microservices.model.model.Question;
+import com.shoppingdistrict.microservices.model.model.QuestionOption;
 import com.shoppingdistrict.microservices.model.model.Reply;
 import com.shoppingdistrict.microservices.model.model.Subject;
 import com.shoppingdistrict.microservices.model.model.UserSubject;
@@ -296,23 +297,64 @@ public class ProductlistingController {
 	 * that instance with Subject object that only have id field value populated. 
 	 * @param questions  List of Question objects which Subject instance are going to be replaced.
 	 */
-	public void attachSubjectToQuestion(List<Question> questions) {
+	public void attachSubjectToQuestion(List<Question> questions, Question question) {
 		logger.info("Attaching subject ids to question in attachSubjectToQuestion");
-		for (Question qu : questions) {
-			Subject subject = new Subject();
-			subject.setId(qu.getSubject().getId());
-			qu.setSubject(subject);
+		
+		if (questions != null) {
+			for (Question qu : questions) {
+				Subject subject = new Subject();
+				subject.setId(qu.getSubject().getId());
+				qu.setSubject(subject);
+			}
 		}
+		
+		if (question != null) {
+			Subject subject = new Subject();
+			subject.setId(question.getSubject().getId());
+			question.setSubject(subject);
+		}
+		
 		logger.info("Have attached subject ids to question and exiting from attachSubjectToQuestion");
 	}
-
-	public void attachArticleToQuestion(List<Question> questions) {
-		logger.info("Attaching article ids to question in attachArticleToQuestion");
-		for (Question qu : questions) {
-			Articles article = new Articles();
-			article.setId(qu.getArticle().getId());
-			qu.setArticle(article);
+	
+	/**
+	 * This method is used to detach Question from Subject. Might need to be replaced by DTO classes in near future.
+	 * @param subjects   List of Subject objects from which child class called Question is going to be detached.
+	 */
+	public void detachQuestionFromSubject(List<Subject> subjects, Subject subject) {
+		logger.info("Detaching Question instance from Subject instacne in detachQuestionFromSubject");
+		
+		if (subjects != null) {
+			for (Subject sub: subjects) {
+				sub.setQuestions(null);
+			}
 		}
+		
+		if (subject != null) {
+			subject.setQuestions(null);
+		}
+		
+		logger.info("Detaching Question instance from Subject instacne in detachQuestionFromSubject");
+	}
+	
+
+	public void attachArticleToQuestion(List<Question> questions, Question question) {
+		logger.info("Attaching article ids to question in attachArticleToQuestion");
+		
+		if (questions != null) {
+			for (Question qu : questions) {
+				Articles article = new Articles();
+				article.setId(qu.getArticle().getId());
+				qu.setArticle(article);
+			}
+		}
+		
+		if (question != null) {
+			Articles article = new Articles();
+			article.setId(question.getArticle().getId());
+			question.setArticle(article);
+		}
+		
 		logger.info("Have attached article ids to question and exiting from attachArticleToQuestion");
 	}
 
@@ -629,12 +671,60 @@ public class ProductlistingController {
 		logger.info("Returning orders and exiting from retrieveAllProducts");
 		return products;
 	}
+	
+	@PostMapping("/subjects")
+	public Subject createSubject(@Valid @RequestBody Subject subject) {
+		logger.info("Entry to createSubject with title {} and Question size {}", subject.getTitle(), subject.getQuestions().size());
+		
+		//need to set subject reference on question so that foreign key id field won't be null
+		for (Question question: subject.getQuestions()) {
+			question.setSubject(subject);
+			
+			//need to set question reference on question option 
+			for (QuestionOption questionOption: question.getOptions()) {
+				questionOption.setQuestion(question);
+			}
+		}
+		
+		Subject savedSubject = subjectRepository.saveAndFlush(subject);
+		detachQuestionFromSubject(null, savedSubject);
+		
+		logger.info("Returning newly created subject with id", savedSubject.getId());
+		return savedSubject;
+	}
+	
+	@PutMapping("/subjects")
+	public Subject updateSubject(@Valid @RequestBody Subject subject) {
+		logger.info("Entry to updateSubject for subject Id{}", subject.getId());
+		
+		Optional<Subject> existingSubject = subjectRepository.findById(subject.getId());
+		existingSubject.get().setCategory(subject.getCategory());
+		existingSubject.get().setSubCategory(subject.getCategory());
+		existingSubject.get().setTitle(subject.getTitle());
+		existingSubject.get().setLevel(subject.getLevel());
+		existingSubject.get().setPremium(subject.isPremium());
+		
+		Subject savedSubject = subjectRepository.saveAndFlush(existingSubject.get());
+		detachQuestionFromSubject(null, savedSubject);
+		
+		logger.info("Returning newly updated subject with id", savedSubject.getId());
+		return savedSubject;
+	}
 
+	/**
+	 * Need to create DTO Classes. Probably use Builder design pattern.
+	 * Only Subject class information is needed not its child classes.
+	 * Annotation with JSON Ignore in Entity class is not an option in this scenario as saving
+	 * Subject instance for first time also require saving its descendants.
+	 * @param level
+	 * @return
+	 */
 	@GetMapping("/subjects/search/{level}")
 	public List<Subject> retrieveSubjectByLevel(@PathVariable("level") int level) {
 		logger.info("Entry to retrieveSubjectByLevel, level {}", level);
 		List<Subject> subjects = subjectRepository.findByLevel(level);
-		logger.info("Size of all subjects", subjects.size());
+		logger.info("Size of all subjects, {}", subjects.size());
+		detachQuestionFromSubject(subjects, null);
 		logger.info("Exiting from retrieveSubjectByLevel");
 		return subjects;
 	}
@@ -650,14 +740,66 @@ public class ProductlistingController {
 		logger.info("Exiting from retrieveSubjectByCategorySubCategoryAndLevel");
 		return subjects;
 	}
+	
+	@PostMapping("/questions")
+	public Question createQuestion(@Valid @RequestBody Question question) {
+		logger.info("Entry to createQuestion for question with content {}", question.getContent());
+		
+		for (QuestionOption option: question.getOptions()) {
+			//need to set question reference on question option  so that foreign key id field won't be null
+			option.setQuestion(question);
+		}
+		Question savedQuestion = questionRepository.saveAndFlush(question);
+		logger.info("Returning newly created question with question id {} and exiting from createQuestion", savedQuestion.getId());
+		return savedQuestion;
+	}
+	
+	@PutMapping("/questions")
+	public Question updateQuestion(@Valid @RequestBody Question question) {
+		logger.info("Entry to updateQuestion for question with id {}", question.getId());
+		
+		Optional<Question> optionalQue = questionRepository.findById(question.getId());
+		optionalQue.get().setArticle(question.getArticle());
+		optionalQue.get().setContent(question.getContent());
+		for (int i = 0; i<question.getOptions().size(); i++) {
+			QuestionOption existingOption = optionalQue.get().getOptions().get(i);
+			QuestionOption updateOption = question.getOptions().get(i);
+			
+			existingOption.setContent(updateOption.getContent());
+			existingOption.setCorrectOption(updateOption.isCorrectOption());
+			existingOption.setExplanation(updateOption.getExplanation());
+ 		}
+		Question savedQuestion = questionRepository.saveAndFlush(optionalQue.get());
+		
+		attachSubjectToQuestion(null,savedQuestion);
+		attachArticleToQuestion(null,savedQuestion);
+		
+		logger.info("Returning newly updated question with question id {} and exiting from updateQuestion", savedQuestion.getId());
+		return savedQuestion;
+	}
+	
+//	@PostMapping("/questionOptions")
+//	public Question createQuestionOption(@Valid @RequestBody QuestionOption[] questionOptions) {
+//		logger.info("Entry to createQuestionOption with number of option is {}",  questionOptions.length);
+//		
+//		if(questionOptions.length > 0) {
+//			logger.info("There is no question option to create.");
+//			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//		} else {
+//			
+//		}
+//		Question savedQuestion = questionRepository.saveAndFlush(question);
+//		logger.info("Returning newly created question with question id {} and exiting from createQuestion", savedQuestion.getId());
+//		return savedQuestion;
+//	}
 
 	@GetMapping("/questions/search/{subjectId}")
 	public List<Question> retrieveQuestionBySubjectId(@PathVariable("subjectId") int subjectId) {
 		logger.info("Entry to retrieveQuestionBySubjectId, subjectId {}", subjectId);
 		List<Question> questions = questionRepository.findBySubjectId(subjectId);
 		logger.info("Size of all questions", questions.size());
-		attachSubjectToQuestion(questions);
-		attachArticleToQuestion(questions);
+		attachSubjectToQuestion(questions, null);
+		attachArticleToQuestion(questions, null);
 		logger.info("Exiting from retrieveQuestionBySubjectId");
 		return questions;
 	}
