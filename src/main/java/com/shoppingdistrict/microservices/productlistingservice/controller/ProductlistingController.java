@@ -245,8 +245,8 @@ public class ProductlistingController {
 			Users user = new Users();
 			logger.info("user Id:", comment.getUser().getId());
 			user.setId(comment.getUser().getId());
-			user.setEmail(comment.getUser().getEmail());
-
+			//user.setEmail(comment.getUser().getEmail());
+			user.setUsername(comment.getUser().getUsername());
 			comment.setUser(user);
 			comment.setReply(null);
 			commentsWithUser.add(comment);
@@ -262,7 +262,8 @@ public class ProductlistingController {
 		for (Reply rep : replies) {
 			Users user = new Users();
 			user.setId(rep.getUser().getId());
-			user.setEmail(rep.getUser().getEmail());
+			//user.setEmail(rep.getUser().getEmail());
+			user.setUsername(rep.getUser().getUsername());
 			rep.setUser(user);
 			repliesWithUser.add(rep);
 		}
