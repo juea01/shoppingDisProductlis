@@ -189,7 +189,6 @@ public class ProductlistingController {
 		logger.info("Size of all articles", articles.size());
 
 		List<Articles> articlesToReturn = new ArrayList<Articles>();
-
 		for (Articles a : articles) {
 			Articles art = new Articles();
 			art.setId(a.getId());
@@ -202,9 +201,25 @@ public class ProductlistingController {
 		}
 
 		logger.info("Returning articles and exiting from retriveAllArticles");
-
 		return articlesToReturn;
 
+	}
+	
+	public void attachUserToArticle(Articles article) {
+		logger.info("Entry to attachUserToArticle");
+		Users user = new Users();
+		Users artUser = article.getUser();
+		if(artUser != null) {
+			user.setId(artUser.getId());
+			user.setUsername(article.getUser().getUsername());
+			article.setUser(user);
+		} else {
+			logger.info("Can't retrieve associated user for this article {}",article.getId());	
+			article.setUser(null);
+		}
+		
+		logger.info("Exiting from attachUserToArticle");
+		
 	}
 
 	@GetMapping("/articles/{id}")
@@ -223,13 +238,14 @@ public class ProductlistingController {
 		} else {
 
 			Articles articles = article.get();
-			List<Comment> comments = articles.getComments();
-
+			
 			/**
 			 * TODO: In future it would be good idea to have DTO classes rather than using
 			 * Database model classes for transporting data
 			 */
+			attachUserToArticle(articles);
 
+			List<Comment> comments = articles.getComments();
 			articles.setComments(attachUserToComment(comments));
 
 			logger.info("Returning article {} and exiting from retriveArticleById", id);
@@ -423,6 +439,8 @@ public class ProductlistingController {
 				art.setTitle(a.getTitle());
 				art.setIntroduction(a.getIntroduction());
 				art.setImages(a.getImages());
+				art.setUser(a.getUser());
+				attachUserToArticle(art);
 				articlesToReturn.add(art);
 			}
 			logger.info("Returning articles and exiting from retriveArticleBySubCategory");

@@ -76,12 +76,12 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+      
 		<dependency>
 			<groupId>com.shoppingdistrict.microservices.model</groupId>
 			<artifactId>model</artifactId>
 			<version>0.0.1</version>
-		</dependency>
+		</dependency>    
 
 		<dependency>
 			<groupId>com.shoppingdistrict.microservices.exceptionshandling </groupId>

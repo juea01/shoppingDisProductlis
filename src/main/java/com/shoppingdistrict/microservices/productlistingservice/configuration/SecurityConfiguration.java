@@ -71,6 +71,12 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				
 				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/products/**").hasRole("ADMIN").and()
 				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/products/**").hasRole("ADMIN").and()
+				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/articles/**").hasAnyRole( "LECTURER").and()
+				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/articles/**").hasAnyRole( "LECTURER").and()
+				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/subjects/**").hasAnyRole( "LECTURER").and()
+				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/subjects/**").hasAnyRole( "LECTURER").and()
+				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/questions/**").hasAnyRole( "LECTURER").and()
+				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/questions/**").hasAnyRole( "LECTURER").and()
 				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/comments/**").hasAnyRole("ADMIN", "CUSTOMER").and()
 				.authorizeRequests().antMatchers(HttpMethod.POST,"/product-listing-service/comments/**").hasAnyRole("ADMIN", "CUSTOMER").and()
 				.authorizeRequests().antMatchers(HttpMethod.PUT,"/product-listing-service/userSubject/**").hasAnyRole("ADMIN", "CUSTOMER").and()
