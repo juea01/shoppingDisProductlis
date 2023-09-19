@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -182,7 +183,7 @@ public class ProductlistingController {
 	}
 
 	@GetMapping("/articles")
-	public List<Articles> retriveAllArticles() {
+	public List<Articles> retrieveAllArticles() {
 		logger.info("Entry to retriveAllArticles");
 
 		List<Articles> articles = articleRepository.findAll();
@@ -201,6 +202,30 @@ public class ProductlistingController {
 		}
 
 		logger.info("Returning articles and exiting from retriveAllArticles");
+		return articlesToReturn;
+
+	}
+	
+	@GetMapping("/articles/authors/{id}")
+	public List<Articles> retrieveAllArticlesByAuthorId(@PathVariable Integer id) {
+		logger.info("Entry to retrieveAllArticlesByAuthorId, {}", id);
+
+		List<Articles> articles = articleRepository.findByUsersId(id);
+		logger.info("Size of all articles", articles.size());
+
+		List<Articles> articlesToReturn = new ArrayList<Articles>();
+		for (Articles a : articles) {
+			Articles art = new Articles();
+			art.setId(a.getId());
+			art.setCategory(a.getCategory());
+			art.setSubcategory(a.getSubcategory());
+			art.setTitle(a.getTitle());
+			art.setIntroduction(a.getIntroduction());
+			art.setImages(a.getImages());
+			articlesToReturn.add(art);
+		}
+
+		logger.info("Returning articles and exiting from retrieveAllArticlesByAuthorId");
 		return articlesToReturn;
 
 	}
@@ -510,9 +535,9 @@ public class ProductlistingController {
 
 	// TODO: Shall try and catch here or let error handling component to handle
 	@PutMapping("/articles/{id}")
+//	@PreAuthorize("#article.getUser().getUsername().toUpperCase() == authentication.name.substring(authentication.name.indexOf(\":\", 3)+1).toUpperCase()")
 	public ResponseEntity<Articles> updateArticle(@Valid @RequestBody Articles article, @PathVariable Integer id) {
 		logger.info("Entry to updateArticle");
-
 		logger.info("Article to be updated {}", article.getId());
 
 		Optional<Articles> existingArticles = articleRepository.findById(id);
@@ -529,11 +554,23 @@ public class ProductlistingController {
 
 //				URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 //						.buildAndExpand(updatedProduct.getId()).toUri();
+		/**
+		 * TODO: In future it would be good idea to have DTO classes rather than using
+		 * Database model classes for transporting data
+		 */
+		Articles articlesToReturn = new Articles();
+		articlesToReturn.setId(updatedArticle.getId());
+		articlesToReturn.setCategory(updatedArticle.getCategory());
+		articlesToReturn.setSubcategory(updatedArticle.getSubcategory());
+		articlesToReturn.setTitle(updatedArticle.getTitle());
+		articlesToReturn.setIntroduction(updatedArticle.getIntroduction());
+		articlesToReturn.setImages(updatedArticle.getImages());
+		
 
 		logger.info("Returning newly updated article id {} and exiting from updateArticle", updatedArticle.getId(),
-				updatedArticle);
+				articlesToReturn);
 
-		return new ResponseEntity<>(updatedArticle, HttpStatus.CREATED);
+		return new ResponseEntity<>(articlesToReturn, HttpStatus.CREATED);
 
 	}
 
