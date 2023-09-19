@@ -246,6 +246,39 @@ public class ProductlistingController {
 		logger.info("Exiting from attachUserToArticle");
 		
 	}
+	
+	public void attachUserToSubject(List<Subject> subjects, Subject subject) {
+		logger.info("Entry to attachUserToSubject");
+		if (subjects != null) {
+			for (Subject sub: subjects) {
+				Users subjectUser = sub.getUser();
+				if(subjectUser != null) {
+					Users user = new Users();
+					user.setId(subjectUser.getId());
+					user.setUsername(subjectUser.getUsername());
+					sub.setUser(user);
+				} else {
+					logger.info("Can't retrieve associated user for this subject {}",sub.getId());	
+					sub.setUser(null);
+				}
+			}
+		} else {
+			Users subjectUser = subject.getUser();
+			if(subjectUser != null) {
+				Users user = new Users();
+				user.setId(subjectUser.getId());
+				user.setUsername(subjectUser.getUsername());
+				subject.setUser(user);
+			} else {
+				logger.info("Can't retrieve associated user for this subject {}",subject.getId());	
+				subject.setUser(null);
+			}
+		}
+		
+		
+		logger.info("Exiting from attachUserToSubject");
+		
+	}
 
 	@GetMapping("/articles/{id}")
 	public Articles retriveArticleById(@PathVariable Integer id) {
@@ -744,6 +777,7 @@ public class ProductlistingController {
 		
 		Subject savedSubject = subjectRepository.saveAndFlush(subject);
 		detachQuestionFromSubject(null, savedSubject);
+		attachUserToSubject(null, savedSubject);
 		
 		logger.info("Returning newly created subject with id", savedSubject.getId());
 		return savedSubject;
@@ -762,6 +796,7 @@ public class ProductlistingController {
 		
 		Subject savedSubject = subjectRepository.saveAndFlush(existingSubject.get());
 		detachQuestionFromSubject(null, savedSubject);
+		attachUserToSubject(null, savedSubject);
 		
 		logger.info("Returning newly updated subject with id", savedSubject.getId());
 		return savedSubject;
@@ -781,6 +816,18 @@ public class ProductlistingController {
 		List<Subject> subjects = subjectRepository.findByLevel(level);
 		logger.info("Size of all subjects, {}", subjects.size());
 		detachQuestionFromSubject(subjects, null);
+		attachUserToSubject(subjects, null);
+		logger.info("Exiting from retrieveSubjectByLevel");
+		return subjects;
+	}
+	
+	@GetMapping("/subjects/authors/{id}")
+	public List<Subject> retrieveSubjectByAuthorId(@PathVariable("id") int id) {
+		logger.info("Entry to retrieveSubjectByAuthorId, Id {}", id);
+		List<Subject> subjects = subjectRepository.findByUserId(id);
+		logger.info("Size of all subjects, {}", subjects.size());
+		detachQuestionFromSubject(subjects, null);
+		attachUserToSubject(subjects, null);
 		logger.info("Exiting from retrieveSubjectByLevel");
 		return subjects;
 	}
@@ -793,6 +840,8 @@ public class ProductlistingController {
 		List<Subject> subjects = subjectRepository.findByLevelAndCategoryLikeAndSubCategoryLike(level, category,
 				subcategory);
 		logger.info("Size of all subjects", subjects.size());
+		detachQuestionFromSubject(subjects, null);
+		attachUserToSubject(subjects, null);
 		logger.info("Exiting from retrieveSubjectByCategorySubCategoryAndLevel");
 		return subjects;
 	}
