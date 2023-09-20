@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -185,8 +186,8 @@ public class ProductlistingController {
 	@GetMapping("/articles")
 	public List<Articles> retrieveAllArticles() {
 		logger.info("Entry to retriveAllArticles");
-
-		List<Articles> articles = articleRepository.findAll();
+		
+		List<Articles> articles = articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
 		logger.info("Size of all articles", articles.size());
 
 		List<Articles> articlesToReturn = new ArrayList<Articles>();
@@ -198,6 +199,10 @@ public class ProductlistingController {
 			art.setTitle(a.getTitle());
 			art.setIntroduction(a.getIntroduction());
 			art.setImages(a.getImages());
+			
+			art.setUser(a.getUser());
+			attachUserToArticle(art);
+			
 			articlesToReturn.add(art);
 		}
 
