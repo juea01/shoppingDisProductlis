@@ -851,6 +851,20 @@ public class ProductlistingController {
 		return subjects;
 	}
 	
+	@GetMapping("/subjects/search/{level}/{subcategory}")
+	public List<Subject> retrieveSubjectBySubCategoryAndLevel(@PathVariable("level") int level,
+			 @PathVariable("subcategory") String subcategory) {
+		logger.info("Entry to retrieveSubjectBySubCategoryAndLevel, level {}, subcategory {}",
+				level, subcategory);
+		List<Subject> subjects = subjectRepository.findByLevelAndSubCategory(level,
+				subcategory);
+		logger.info("Size of all subjects", subjects.size());
+		detachQuestionFromSubject(subjects, null);
+		attachUserToSubject(subjects, null);
+		logger.info("Exiting from retrieveSubjectBySubCategoryAndLevel");
+		return subjects;
+	}
+	
 	@PostMapping("/questions")
 	public Question createQuestion(@Valid @RequestBody Question question) {
 		logger.info("Entry to createQuestion for question with content {}", question.getContent());
