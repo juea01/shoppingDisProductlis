@@ -794,7 +794,7 @@ public class ProductlistingController {
 		
 		Optional<Subject> existingSubject = subjectRepository.findById(subject.getId());
 		existingSubject.get().setCategory(subject.getCategory());
-		existingSubject.get().setSubCategory(subject.getCategory());
+		existingSubject.get().setSubCategory(subject.getSubCategory());
 		existingSubject.get().setTitle(subject.getTitle());
 		existingSubject.get().setLevel(subject.getLevel());
 		existingSubject.get().setPremium(subject.isPremium());
