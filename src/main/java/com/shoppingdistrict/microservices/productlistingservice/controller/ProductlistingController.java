@@ -191,7 +191,8 @@ public class ProductlistingController {
 	public List<Articles> retrieveAllArticles() {
 		logger.info("Entry to retriveAllArticles");
 		
-		List<Articles> articles = articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
+		//List<Articles> articles = articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
+		List<Articles> articles = articleRepository.findByIsPublishOrderByPublishDateDesc(true);
 		logger.info("Size of all articles", articles.size());
 
 		List<Articles> articlesToReturn = new ArrayList<Articles>();
@@ -201,6 +202,7 @@ public class ProductlistingController {
 			art.setCategory(a.getCategory());
 			art.setSubcategory(a.getSubcategory());
 			art.setTitle(a.getTitle());
+			art.setPublish(a.isPublish());
 			art.setIntroduction(a.getIntroduction());
 			art.setImages(a.getImages());
 			
@@ -231,6 +233,7 @@ public class ProductlistingController {
 			art.setTitle(a.getTitle());
 			art.setIntroduction(a.getIntroduction());
 			art.setImages(a.getImages());
+			art.setPublish(a.isPublish());
 			articlesToReturn.add(art);
 		}
 
@@ -513,6 +516,7 @@ public class ProductlistingController {
 				art.setIntroduction(a.getIntroduction());
 				art.setImages(a.getImages());
 				art.setUser(a.getUser());
+				art.setPublish(a.isPublish());
 				attachUserToArticle(art);
 				articlesToReturn.add(art);
 			}
@@ -589,13 +593,15 @@ public class ProductlistingController {
 		logger.info("Article to be updated {}", article.getId());
 
 		Optional<Articles> existingArticles = articleRepository.findById(id);
-		existingArticles.get().setCategory(article.getCategory());
+		
 		existingArticles.get().setTitle(article.getTitle());
+		existingArticles.get().setCategory(article.getCategory());
+		existingArticles.get().setSubcategory(article.getSubcategory());
 		existingArticles.get().setIntroduction(article.getIntroduction());
 		existingArticles.get().setFirstParagraph(article.getFirstParagraph());
 		existingArticles.get().setSecondParagraph(article.getSecondParagraph());
 		existingArticles.get().setConclusion(article.getConclusion());
-		existingArticles.get().setSubcategory(article.getSubcategory());
+		existingArticles.get().setPublish(article.isPublish());
 		existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
 
 		Articles updatedArticle = articleRepository.saveAndFlush(existingArticles.get());

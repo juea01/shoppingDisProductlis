@@ -17,5 +17,7 @@ public interface ArticleRepository extends JpaRepository<Articles, Integer> {
 	@Query("SELECT a from Articles a WHERE a.title LIKE %:title%")
 	List<Articles> findArticlsBySimilarTitle(String title);
 	
+	List<Articles> findByIsPublishOrderByPublishDateDesc(boolean isPublish);
+	
 
 }
