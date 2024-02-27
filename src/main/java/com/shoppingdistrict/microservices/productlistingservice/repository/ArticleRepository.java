@@ -11,11 +11,11 @@ import com.shoppingdistrict.microservices.model.model.Articles;
 public interface ArticleRepository extends JpaRepository<Articles, Integer> {
 	
 	List<Articles> findByUsersId(int userId);
-	List<Articles> findBySubcategory(String subcateogry);
+	List<Articles> findByIsPublishAndSubcategory(boolean isPublish, String subcateogry);
 	List<Articles> findByTitleLikeOrCategoryLikeOrSubcategoryLike(String title, String category, String subcategory);
 	
-	@Query("SELECT a from Articles a WHERE a.title LIKE %:title%")
-	List<Articles> findArticlsBySimilarTitle(String title);
+	@Query("SELECT a from Articles a WHERE a.title LIKE %:title% AND a.isPublish = :isPublish")
+	List<Articles> findArticlsBySimilarTitle(String title, boolean isPublish);
 	
 	List<Articles> findByIsPublishOrderByPublishDateDesc(boolean isPublish);
 	

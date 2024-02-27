@@ -492,7 +492,7 @@ public class ProductlistingController {
 		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
 		// .toUri();
 
-		List<Articles> articles = articleRepository.findBySubcategory(subCategory);
+		List<Articles> articles = articleRepository.findByIsPublishAndSubcategory(true, subCategory);
 
 		if (articles.isEmpty()) {
 			logger.info("Article with given sub category {} not found", subCategory);

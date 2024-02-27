@@ -22,7 +22,7 @@ public class ArticleManagementService {
 	
 	public List<Articles> getArticlesIdAndTitleByTitle(String title) {
 		logger.info("Entry to getArticlesIdAndTitleByTitle {}", title);
-		List<Articles> articles = articleRepository.findArticlsBySimilarTitle(title);
+		List<Articles> articles = articleRepository.findArticlsBySimilarTitle(title, true);
 		logger.info("Size of all articles with similar title found {}", articles.size());
 		int limitSize = 5;
 		int count = 0;
