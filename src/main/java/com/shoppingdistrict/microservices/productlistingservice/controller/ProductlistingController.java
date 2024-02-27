@@ -44,6 +44,7 @@ import com.shoppingdistrict.microservices.model.model.Reply;
 import com.shoppingdistrict.microservices.model.model.Subject;
 import com.shoppingdistrict.microservices.model.model.UserSubject;
 import com.shoppingdistrict.microservices.model.model.Users;
+import com.shoppingdistrict.microservices.productlistingservice.ArticleManagementService;
 import com.shoppingdistrict.microservices.productlistingservice.configuration.Configuration;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ArticleImageRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ArticleRepository;
@@ -104,6 +105,9 @@ public class ProductlistingController {
 	private AmazonS3 amazonS3;
 
 	private String s3BucketName = "tech-district-nanobit";
+	
+	@Autowired
+	private ArticleManagementService articleManagementService;
 
 	// retrieveOrder
 	@GetMapping("/products/{id}")
@@ -233,6 +237,12 @@ public class ProductlistingController {
 		logger.info("Returning articles and exiting from retrieveAllArticlesByAuthorId");
 		return articlesToReturn;
 
+	}
+	
+	@GetMapping("/articles/titles/{title}")
+	public List<Articles> getArticlesIdAndTitleByTitle(@PathVariable String title) {
+		logger.info("Entry to getArticlesIdAndTitleByTitle, {}", title);
+		return articleManagementService.getArticlesIdAndTitleByTitle(title);
 	}
 	
 	public void attachUserToArticle(Articles article) {
