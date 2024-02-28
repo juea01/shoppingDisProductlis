@@ -814,6 +814,7 @@ public class ProductlistingController {
 		existingSubject.get().setTitle(subject.getTitle());
 		existingSubject.get().setLevel(subject.getLevel());
 		existingSubject.get().setPremium(subject.isPremium());
+		existingSubject.get().setPublish(subject.isPublish());
 		
 		Subject savedSubject = subjectRepository.saveAndFlush(existingSubject.get());
 		detachQuestionFromSubject(null, savedSubject);
@@ -834,7 +835,7 @@ public class ProductlistingController {
 	@GetMapping("/subjects/search/{level}")
 	public List<Subject> retrieveSubjectByLevel(@PathVariable("level") int level) {
 		logger.info("Entry to retrieveSubjectByLevel, level {}", level);
-		List<Subject> subjects = subjectRepository.findByLevel(level);
+		List<Subject> subjects = subjectRepository.findByIsPublishAndLevel(true, level);
 		logger.info("Size of all subjects, {}", subjects.size());
 		detachQuestionFromSubject(subjects, null);
 		attachUserToSubject(subjects, null);
@@ -858,7 +859,7 @@ public class ProductlistingController {
 			@PathVariable("category") String category, @PathVariable("subcategory") String subcategory) {
 		logger.info("Entry to retrieveSubjectByCategorySubCategoryAndLevel, level {}, category {}, subcategory {}",
 				level, category, subcategory);
-		List<Subject> subjects = subjectRepository.findByLevelAndCategoryLikeAndSubCategoryLike(level, category,
+		List<Subject> subjects = subjectRepository.findByIsPublishAndLevelAndCategoryLikeAndSubCategoryLike(true,level, category,
 				subcategory);
 		logger.info("Size of all subjects", subjects.size());
 		detachQuestionFromSubject(subjects, null);
@@ -872,7 +873,7 @@ public class ProductlistingController {
 			 @PathVariable("subcategory") String subcategory) {
 		logger.info("Entry to retrieveSubjectBySubCategoryAndLevel, level {}, subcategory {}",
 				level, subcategory);
-		List<Subject> subjects = subjectRepository.findByLevelAndSubCategory(level,
+		List<Subject> subjects = subjectRepository.findByIsPublishAndLevelAndSubCategory(true, level,
 				subcategory);
 		logger.info("Size of all subjects", subjects.size());
 		detachQuestionFromSubject(subjects, null);

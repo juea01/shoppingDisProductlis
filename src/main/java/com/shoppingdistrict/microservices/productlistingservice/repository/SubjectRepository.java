@@ -9,10 +9,10 @@ import com.shoppingdistrict.microservices.model.model.Subject;
 
 public interface SubjectRepository extends JpaRepository<Subject, Integer> {
 
-	List<Subject> findByLevel(int level);
+	List<Subject> findByIsPublishAndLevel(boolean isPublish, int level);
 	List<Subject> findByUserId(int userId);
-	List<Subject> findByLevelAndCategoryLikeAndSubCategoryLike(int level, String category, String subCategory);
-	List<Subject> findByLevelAndSubCategory(int level, String subCategory);
+	List<Subject> findByIsPublishAndLevelAndCategoryLikeAndSubCategoryLike(boolean isPublish, int level, String category, String subCategory);
+	List<Subject> findByIsPublishAndLevelAndSubCategory(boolean isPublish, int level, String subCategory);
 	
 	
 
