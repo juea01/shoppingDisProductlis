@@ -94,7 +94,7 @@ public class ProductlistingController {
 
 	@Autowired
 	private UserSubjectRepository userSubjectRepository;
-	
+
 	@Autowired
 	private CompletedQuestionRepository completedQuestionRepository;
 
@@ -105,7 +105,7 @@ public class ProductlistingController {
 	private AmazonS3 amazonS3;
 
 	private String s3BucketName = "tech-district-nanobit";
-	
+
 	@Autowired
 	private ArticleManagementService articleManagementService;
 
@@ -190,8 +190,9 @@ public class ProductlistingController {
 	@GetMapping("/articles")
 	public List<Articles> retrieveAllArticles() {
 		logger.info("Entry to retriveAllArticles");
-		
-		//List<Articles> articles = articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
+
+		// List<Articles> articles =
+		// articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
 		List<Articles> articles = articleRepository.findByIsPublishOrderByPublishDateDesc(true);
 		logger.info("Size of all articles", articles.size());
 
@@ -205,10 +206,10 @@ public class ProductlistingController {
 			art.setPublish(a.isPublish());
 			art.setIntroduction(a.getIntroduction());
 			art.setImages(a.getImages());
-			
+
 			art.setUser(a.getUser());
 			attachUserToArticle(art);
-			
+
 			articlesToReturn.add(art);
 		}
 
@@ -216,7 +217,7 @@ public class ProductlistingController {
 		return articlesToReturn;
 
 	}
-	
+
 	@GetMapping("/articles/authors/{id}")
 	public List<Articles> retrieveAllArticlesByAuthorId(@PathVariable Integer id) {
 		logger.info("Entry to retrieveAllArticlesByAuthorId, {}", id);
@@ -241,93 +242,66 @@ public class ProductlistingController {
 		return articlesToReturn;
 
 	}
-	
+
 	@GetMapping("/articles/titles/{title}")
 	public List<Articles> getArticlesIdAndTitleByTitle(@PathVariable String title) {
 		logger.info("Entry to getArticlesIdAndTitleByTitle, {}", title);
 		return articleManagementService.getArticlesIdAndTitleByTitle(title);
 	}
-	
+
 	public void attachUserToArticle(Articles article) {
 		logger.info("Entry to attachUserToArticle");
 		Users user = new Users();
 		Users artUser = article.getUser();
-		if(artUser != null) {
+		if (artUser != null) {
 			user.setId(artUser.getId());
 			user.setUsername(article.getUser().getUsername());
 			article.setUser(user);
 		} else {
-			logger.info("Can't retrieve associated user for this article {}",article.getId());	
+			logger.info("Can't retrieve associated user for this article {}", article.getId());
 			article.setUser(null);
 		}
-		
+
 		logger.info("Exiting from attachUserToArticle");
-		
+
 	}
-	
+
 	public void attachUserToSubject(List<Subject> subjects, Subject subject) {
 		logger.info("Entry to attachUserToSubject");
 		if (subjects != null) {
-			for (Subject sub: subjects) {
+			for (Subject sub : subjects) {
 				Users subjectUser = sub.getUser();
-				if(subjectUser != null) {
+				if (subjectUser != null) {
 					Users user = new Users();
 					user.setId(subjectUser.getId());
 					user.setUsername(subjectUser.getUsername());
 					sub.setUser(user);
 				} else {
-					logger.info("Can't retrieve associated user for this subject {}",sub.getId());	
+					logger.info("Can't retrieve associated user for this subject {}", sub.getId());
 					sub.setUser(null);
 				}
 			}
 		} else {
 			Users subjectUser = subject.getUser();
-			if(subjectUser != null) {
+			if (subjectUser != null) {
 				Users user = new Users();
 				user.setId(subjectUser.getId());
 				user.setUsername(subjectUser.getUsername());
 				subject.setUser(user);
 			} else {
-				logger.info("Can't retrieve associated user for this subject {}",subject.getId());	
+				logger.info("Can't retrieve associated user for this subject {}", subject.getId());
 				subject.setUser(null);
 			}
 		}
-		
-		
+
 		logger.info("Exiting from attachUserToSubject");
-		
+
 	}
 
 	@GetMapping("/articles/{id}")
 	public Articles retriveArticleById(@PathVariable Integer id) {
-		logger.info("Entry to retriveArticleById");
-
-		// URI uri =
-		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-		// .toUri();
-
-		Optional<Articles> article = articleRepository.findById(id);
-
-		if (article.isEmpty()) {
-			logger.info("Article with given id {} not found", id);
-			return null;
-		} else {
-
-			Articles articles = article.get();
-			
-			/**
-			 * TODO: In future it would be good idea to have DTO classes rather than using
-			 * Database model classes for transporting data
-			 */
-			attachUserToArticle(articles);
-
-			List<Comment> comments = articles.getComments();
-			articles.setComments(attachUserToComment(comments));
-
-			logger.info("Returning article {} and exiting from retriveArticleById", id);
-			return articles;
-		}
-
+		logger.info("Entry to retriveArticleById Api EndPoint {}", id);
+		return articleManagementService.retriveArticleById(id);
 	}
 
 	public List<Comment> attachUserToComment(List<Comment> comments) {
@@ -337,7 +311,7 @@ public class ProductlistingController {
 			Users user = new Users();
 			logger.info("user Id:", comment.getUser().getId());
 			user.setId(comment.getUser().getId());
-			//user.setEmail(comment.getUser().getEmail());
+			// user.setEmail(comment.getUser().getEmail());
 			user.setUsername(comment.getUser().getUsername());
 			comment.setUser(user);
 			comment.setReply(null);
@@ -354,7 +328,7 @@ public class ProductlistingController {
 		for (Reply rep : replies) {
 			Users user = new Users();
 			user.setId(rep.getUser().getId());
-			//user.setEmail(rep.getUser().getEmail());
+			// user.setEmail(rep.getUser().getEmail());
 			user.setUsername(rep.getUser().getUsername());
 			rep.setUser(user);
 			repliesWithUser.add(rep);
@@ -383,16 +357,18 @@ public class ProductlistingController {
 		}
 		logger.info("Have attached subject to user subject and exiting from attachSubjectToUserSubject");
 	}
-	
+
 	/**
-	 * This method is used for replacing instance of  Subject class with nearly all fields value populated 
-	 * (that is not needed for this scenario) and replacing
-	 * that instance with Subject object that only have id field value populated. 
-	 * @param questions  List of Question objects which Subject instance are going to be replaced.
+	 * This method is used for replacing instance of Subject class with nearly all
+	 * fields value populated (that is not needed for this scenario) and replacing
+	 * that instance with Subject object that only have id field value populated.
+	 * 
+	 * @param questions List of Question objects which Subject instance are going to
+	 *                  be replaced.
 	 */
 	public void attachSubjectToQuestion(List<Question> questions, Question question) {
 		logger.info("Attaching subject ids to question in attachSubjectToQuestion");
-		
+
 		if (questions != null) {
 			for (Question qu : questions) {
 				Subject subject = new Subject();
@@ -400,40 +376,42 @@ public class ProductlistingController {
 				qu.setSubject(subject);
 			}
 		}
-		
+
 		if (question != null) {
 			Subject subject = new Subject();
 			subject.setId(question.getSubject().getId());
 			question.setSubject(subject);
 		}
-		
+
 		logger.info("Have attached subject ids to question and exiting from attachSubjectToQuestion");
 	}
-	
+
 	/**
-	 * This method is used to detach Question from Subject. Might need to be replaced by DTO classes in near future.
-	 * @param subjects   List of Subject objects from which child class called Question is going to be detached.
+	 * This method is used to detach Question from Subject. Might need to be
+	 * replaced by DTO classes in near future.
+	 * 
+	 * @param subjects List of Subject objects from which child class called
+	 *                 Question is going to be detached.
 	 */
 	public void detachQuestionFromSubject(List<Subject> subjects, Subject subject) {
 		logger.info("Detaching Question instance from Subject instacne in detachQuestionFromSubject");
-		
+
 		if (subjects != null) {
-			for (Subject sub: subjects) {
+			for (Subject sub : subjects) {
 				sub.setQuestions(null);
 			}
 		}
-		
+
 		if (subject != null) {
 			subject.setQuestions(null);
 		}
-		
+
 		logger.info("Detaching Question instance from Subject instacne in detachQuestionFromSubject");
 	}
-	
 
 	public void attachArticleToQuestion(List<Question> questions, Question question) {
 		logger.info("Attaching article ids to question in attachArticleToQuestion");
-		
+
 		if (questions != null) {
 			for (Question qu : questions) {
 				Articles article = new Articles();
@@ -441,13 +419,13 @@ public class ProductlistingController {
 				qu.setArticle(article);
 			}
 		}
-		
+
 		if (question != null) {
 			Articles article = new Articles();
 			article.setId(question.getArticle().getId());
 			question.setArticle(article);
 		}
-		
+
 		logger.info("Have attached article ids to question and exiting from attachArticleToQuestion");
 	}
 
@@ -567,21 +545,9 @@ public class ProductlistingController {
 
 	@PostMapping("/articles")
 	public ResponseEntity<Articles> createArticle(@Valid @RequestBody Articles article) {
-		logger.info("Entry to createArticle");
-
-		logger.info("Article to be created {}", article);
-		article.setPublishDate(new Timestamp(System.currentTimeMillis()));
-		article.setLastEditDate(new Timestamp(System.currentTimeMillis()));
-
-		Articles savedArticle = articleRepository.saveAndFlush(article);
-
-//		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-//				.toUri();
-
-		logger.info("Returning newly created article id {} {} and exiting from createArticle", savedArticle.getId(),
-				savedArticle);
-
-		return new ResponseEntity<>(savedArticle, HttpStatus.CREATED);
+		logger.info("Entry to createArticle Api Endpoint");
+		logger.info("Title of Article to be created {}", article.getTitle());
+		return articleManagementService.createArticle(article);
 
 	}
 
@@ -589,43 +555,9 @@ public class ProductlistingController {
 	@PutMapping("/articles/{id}")
 //	@PreAuthorize("#article.getUser().getUsername().toUpperCase() == authentication.name.substring(authentication.name.indexOf(\":\", 3)+1).toUpperCase()")
 	public ResponseEntity<Articles> updateArticle(@Valid @RequestBody Articles article, @PathVariable Integer id) {
-		logger.info("Entry to updateArticle");
+		logger.info("Entry to updateArticle Api Endpoint");
 		logger.info("Article to be updated {}", article.getId());
-
-		Optional<Articles> existingArticles = articleRepository.findById(id);
-		
-		existingArticles.get().setTitle(article.getTitle());
-		existingArticles.get().setCategory(article.getCategory());
-		existingArticles.get().setSubcategory(article.getSubcategory());
-		existingArticles.get().setIntroduction(article.getIntroduction());
-		existingArticles.get().setFirstParagraph(article.getFirstParagraph());
-		existingArticles.get().setSecondParagraph(article.getSecondParagraph());
-		existingArticles.get().setConclusion(article.getConclusion());
-		existingArticles.get().setPublish(article.isPublish());
-		existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
-
-		Articles updatedArticle = articleRepository.saveAndFlush(existingArticles.get());
-
-//				URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
-//						.buildAndExpand(updatedProduct.getId()).toUri();
-		/**
-		 * TODO: In future it would be good idea to have DTO classes rather than using
-		 * Database model classes for transporting data
-		 */
-		Articles articlesToReturn = new Articles();
-		articlesToReturn.setId(updatedArticle.getId());
-		articlesToReturn.setCategory(updatedArticle.getCategory());
-		articlesToReturn.setSubcategory(updatedArticle.getSubcategory());
-		articlesToReturn.setTitle(updatedArticle.getTitle());
-		articlesToReturn.setIntroduction(updatedArticle.getIntroduction());
-		articlesToReturn.setImages(updatedArticle.getImages());
-		
-
-		logger.info("Returning newly updated article id {} and exiting from updateArticle", updatedArticle.getId(),
-				articlesToReturn);
-
-		return new ResponseEntity<>(articlesToReturn, HttpStatus.CREATED);
-
+		return articleManagementService.updateArticle(article, id);
 	}
 
 	@PostMapping("/articles/images")
@@ -781,33 +713,35 @@ public class ProductlistingController {
 		logger.info("Returning orders and exiting from retrieveAllProducts");
 		return products;
 	}
-	
+
 	@PostMapping("/subjects")
 	public Subject createSubject(@Valid @RequestBody Subject subject) {
-		logger.info("Entry to createSubject with title {} and Question size {}", subject.getTitle(), subject.getQuestions().size());
-		
-		//need to set subject reference on question so that foreign key id field won't be null
-		for (Question question: subject.getQuestions()) {
+		logger.info("Entry to createSubject with title {} and Question size {}", subject.getTitle(),
+				subject.getQuestions().size());
+
+		// need to set subject reference on question so that foreign key id field won't
+		// be null
+		for (Question question : subject.getQuestions()) {
 			question.setSubject(subject);
-			
-			//need to set question reference on question option 
-			for (QuestionOption questionOption: question.getOptions()) {
+
+			// need to set question reference on question option
+			for (QuestionOption questionOption : question.getOptions()) {
 				questionOption.setQuestion(question);
 			}
 		}
-		
+
 		Subject savedSubject = subjectRepository.saveAndFlush(subject);
 		detachQuestionFromSubject(null, savedSubject);
 		attachUserToSubject(null, savedSubject);
-		
+
 		logger.info("Returning newly created subject with id", savedSubject.getId());
 		return savedSubject;
 	}
-	
+
 	@PutMapping("/subjects")
 	public Subject updateSubject(@Valid @RequestBody Subject subject) {
 		logger.info("Entry to updateSubject for subject Id{}", subject.getId());
-		
+
 		Optional<Subject> existingSubject = subjectRepository.findById(subject.getId());
 		existingSubject.get().setCategory(subject.getCategory());
 		existingSubject.get().setSubCategory(subject.getSubCategory());
@@ -815,20 +749,21 @@ public class ProductlistingController {
 		existingSubject.get().setLevel(subject.getLevel());
 		existingSubject.get().setPremium(subject.isPremium());
 		existingSubject.get().setPublish(subject.isPublish());
-		
+
 		Subject savedSubject = subjectRepository.saveAndFlush(existingSubject.get());
 		detachQuestionFromSubject(null, savedSubject);
 		attachUserToSubject(null, savedSubject);
-		
+
 		logger.info("Returning newly updated subject with id", savedSubject.getId());
 		return savedSubject;
 	}
 
 	/**
-	 * Need to create DTO Classes. Probably use Builder design pattern.
-	 * Only Subject class information is needed not its child classes.
-	 * Annotation with JSON Ignore in Entity class is not an option in this scenario as saving
-	 * Subject instance for first time also require saving its descendants.
+	 * Need to create DTO Classes. Probably use Builder design pattern. Only Subject
+	 * class information is needed not its child classes. Annotation with JSON
+	 * Ignore in Entity class is not an option in this scenario as saving Subject
+	 * instance for first time also require saving its descendants.
+	 * 
 	 * @param level
 	 * @return
 	 */
@@ -842,7 +777,7 @@ public class ProductlistingController {
 		logger.info("Exiting from retrieveSubjectByLevel");
 		return subjects;
 	}
-	
+
 	@GetMapping("/subjects/authors/{id}")
 	public List<Subject> retrieveSubjectByAuthorId(@PathVariable("id") int id) {
 		logger.info("Entry to retrieveSubjectByAuthorId, Id {}", id);
@@ -859,66 +794,67 @@ public class ProductlistingController {
 			@PathVariable("category") String category, @PathVariable("subcategory") String subcategory) {
 		logger.info("Entry to retrieveSubjectByCategorySubCategoryAndLevel, level {}, category {}, subcategory {}",
 				level, category, subcategory);
-		List<Subject> subjects = subjectRepository.findByIsPublishAndLevelAndCategoryLikeAndSubCategoryLike(true,level, category,
-				subcategory);
+		List<Subject> subjects = subjectRepository.findByIsPublishAndLevelAndCategoryLikeAndSubCategoryLike(true, level,
+				category, subcategory);
 		logger.info("Size of all subjects", subjects.size());
 		detachQuestionFromSubject(subjects, null);
 		attachUserToSubject(subjects, null);
 		logger.info("Exiting from retrieveSubjectByCategorySubCategoryAndLevel");
 		return subjects;
 	}
-	
+
 	@GetMapping("/subjects/search/{level}/{subcategory}")
 	public List<Subject> retrieveSubjectBySubCategoryAndLevel(@PathVariable("level") int level,
-			 @PathVariable("subcategory") String subcategory) {
-		logger.info("Entry to retrieveSubjectBySubCategoryAndLevel, level {}, subcategory {}",
-				level, subcategory);
-		List<Subject> subjects = subjectRepository.findByIsPublishAndLevelAndSubCategory(true, level,
-				subcategory);
+			@PathVariable("subcategory") String subcategory) {
+		logger.info("Entry to retrieveSubjectBySubCategoryAndLevel, level {}, subcategory {}", level, subcategory);
+		List<Subject> subjects = subjectRepository.findByIsPublishAndLevelAndSubCategory(true, level, subcategory);
 		logger.info("Size of all subjects", subjects.size());
 		detachQuestionFromSubject(subjects, null);
 		attachUserToSubject(subjects, null);
 		logger.info("Exiting from retrieveSubjectBySubCategoryAndLevel");
 		return subjects;
 	}
-	
+
 	@PostMapping("/questions")
 	public Question createQuestion(@Valid @RequestBody Question question) {
 		logger.info("Entry to createQuestion for question with content {}", question.getContent());
-		
-		for (QuestionOption option: question.getOptions()) {
-			//need to set question reference on question option  so that foreign key id field won't be null
+
+		for (QuestionOption option : question.getOptions()) {
+			// need to set question reference on question option so that foreign key id
+			// field won't be null
 			option.setQuestion(question);
 		}
 		Question savedQuestion = questionRepository.saveAndFlush(question);
-		logger.info("Returning newly created question with question id {} and exiting from createQuestion", savedQuestion.getId());
+		logger.info("Returning newly created question with question id {} and exiting from createQuestion",
+				savedQuestion.getId());
 		return savedQuestion;
 	}
-	
+
 	@PutMapping("/questions")
 	public Question updateQuestion(@Valid @RequestBody Question question) {
 		logger.info("Entry to updateQuestion for question with id {}", question.getId());
-		
+
 		Optional<Question> optionalQue = questionRepository.findById(question.getId());
 		optionalQue.get().setArticle(question.getArticle());
 		optionalQue.get().setContent(question.getContent());
-		for (int i = 0; i<question.getOptions().size(); i++) {
+		for (int i = 0; i < question.getOptions().size(); i++) {
 			QuestionOption existingOption = optionalQue.get().getOptions().get(i);
 			QuestionOption updateOption = question.getOptions().get(i);
-			
+
 			existingOption.setContent(updateOption.getContent());
 			existingOption.setCorrectOption(updateOption.isCorrectOption());
 			existingOption.setExplanation(updateOption.getExplanation());
- 		}
+		}
 		Question savedQuestion = questionRepository.saveAndFlush(optionalQue.get());
-		
-		attachSubjectToQuestion(null,savedQuestion);
-		attachArticleToQuestion(null,savedQuestion);
-		
-		logger.info("Returning newly updated question with question id {} and exiting from updateQuestion", savedQuestion.getId());
+
+		attachSubjectToQuestion(null, savedQuestion);
+		attachArticleToQuestion(null, savedQuestion);
+
+		logger.info("Returning newly updated question with question id {} and exiting from updateQuestion",
+				savedQuestion.getId());
 		return savedQuestion;
 	}
-	
+
 //	@PostMapping("/questionOptions")
 //	public Question createQuestionOption(@Valid @RequestBody QuestionOption[] questionOptions) {
 //		logger.info("Entry to createQuestionOption with number of option is {}",  questionOptions.length);
@@ -956,68 +892,75 @@ public class ProductlistingController {
 		logger.info("Exiting from retrieveUserSubjectsByUserId");
 		return userSubjects;
 	}
-	
+
 	@GetMapping("/userSubject/{userId}/{subjectId}")
-	public ResponseEntity<UserSubject> retrieveUserSubjectsByUserIdAndSubjectId(@PathVariable("userId") int userId, @PathVariable("subjectId") int subjectId) {
-		logger.info("Entry to retrieveUserSubjectsByUserIdAndSubjectId, userId {} and subject id {}", userId, subjectId);
+	public ResponseEntity<UserSubject> retrieveUserSubjectsByUserIdAndSubjectId(@PathVariable("userId") int userId,
+			@PathVariable("subjectId") int subjectId) {
+		logger.info("Entry to retrieveUserSubjectsByUserIdAndSubjectId, userId {} and subject id {}", userId,
+				subjectId);
 		UserSubject userSubject = userSubjectRepository.findByUserIdAndSubjectId(userId, subjectId);
-		if(userSubject==null) {
+		if (userSubject == null) {
 			logger.info("No active user subject found with given user id and subject id.");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		} else {
 			List<UserSubject> userSubjects = new ArrayList<UserSubject>();
 			userSubjects.add(userSubject);
 			logger.info("Number of user subject found {}", userSubjects.size());
-			
+
 			attachUserToUserSubject(userSubjects);
 			attachSubjectToUserSubject(userSubjects);
 			attachQuestionToCompletedQuestion(userSubjects);
-			
-			
+
 			logger.info("Exiting from retrieveUserSubjectsByUserIdAndSubjectId");
 			return ResponseEntity.status(HttpStatus.OK).body(userSubject);
 		}
 	}
-	
+
 	@PostMapping("/userSubject")
 	public UserSubject createUserSubject(@Valid @RequestBody UserSubject userSubject) {
-		logger.info("Entry to createUserSubject for user id {} and subject id {}", userSubject.getUser().getId(), userSubject.getSubject().getId());
+		logger.info("Entry to createUserSubject for user id {} and subject id {}", userSubject.getUser().getId(),
+				userSubject.getSubject().getId());
 		UserSubject savedUserSubject = new UserSubject();
 		savedUserSubject.setId(userSubjectRepository.saveAndFlush(userSubject).getId());
-		logger.info("Returning newly created user subject which id is {} and exiting from createUserSubject", savedUserSubject.getId());
+		logger.info("Returning newly created user subject which id is {} and exiting from createUserSubject",
+				savedUserSubject.getId());
 		return savedUserSubject;
 	}
-	
+
 	/**
-	 * This method is allow to update/alter two properties, completed and enabled, of UserSubject class instance.
-	 * Both or either of those two properties value can be updated.
-	 * @param userSubject  Instance of UserSubject class that need to be updated in database.
+	 * This method is allow to update/alter two properties, completed and enabled,
+	 * of UserSubject class instance. Both or either of those two properties value
+	 * can be updated.
+	 * 
+	 * @param userSubject Instance of UserSubject class that need to be updated in
+	 *                    database.
 	 * @return HTTP Status 204 with ApiResponse object that contain success message.
 	 */
 	@PutMapping("/userSubject")
 	public ResponseEntity<ApiResponse> updateUserSubject(@Valid @RequestBody UserSubject userSubject) {
 		logger.info("Entry to updateUserSubject for user_subject id {}", userSubject.getId());
-		
+
 		Optional<UserSubject> existingUserSubject = userSubjectRepository.findById(userSubject.getId());
 		existingUserSubject.get().setCompleted(userSubject.isCompleted());
 		existingUserSubject.get().setEnabled(userSubject.getEnabled());
 		userSubjectRepository.saveAndFlush(existingUserSubject.get());
-		
+
 		ApiResponse response = new ApiResponse("User Subject updated successfully.", null);
 		logger.info("Successfully update user subject and exiting from updateUserSubject", userSubject.getId());
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
 	}
-	
+
 	@PostMapping("/userSubject/progress")
-	public ResponseEntity<ApiResponse> createSubjectProgress(@Valid @RequestBody List<CompletedQuestion> completedQuestions) {
-		logger.info("Entry to createSubjectProgress for user subject id {} and number of completed questions {} to be created", completedQuestions.get(0).getUserSubject().getId(), completedQuestions.size() );
+	public ResponseEntity<ApiResponse> createSubjectProgress(
+			@Valid @RequestBody List<CompletedQuestion> completedQuestions) {
+		logger.info(
+				"Entry to createSubjectProgress for user subject id {} and number of completed questions {} to be created",
+				completedQuestions.get(0).getUserSubject().getId(), completedQuestions.size());
 		List<CompletedQuestion> savedComQuestions = completedQuestionRepository.saveAll(completedQuestions);
 		logger.info("{} completed question saved successfully", savedComQuestions.size());
 		ApiResponse response = new ApiResponse("Completed Questions successfully saved.", null);
 		logger.info("Exiting from createSubjectProgress");
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
-	
-	
 
 }

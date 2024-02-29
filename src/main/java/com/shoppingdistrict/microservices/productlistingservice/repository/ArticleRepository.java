@@ -19,5 +19,6 @@ public interface ArticleRepository extends JpaRepository<Articles, Integer> {
 	
 	List<Articles> findByIsPublishOrderByPublishDateDesc(boolean isPublish);
 	
+	
 
 }
