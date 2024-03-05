@@ -299,9 +299,15 @@ public class ProductlistingController {
 	}
 
 	@GetMapping("/articles/{id}")
-	public Articles retriveArticleById(@PathVariable Integer id) {
-		logger.info("Entry to retriveArticleById Api EndPoint {}", id);
-		return articleManagementService.retriveArticleById(id);
+	public Articles retrieveArticleById(@PathVariable Integer id) {
+		logger.info("Entry to retrieveArticleById Api EndPoint {}", id);
+		return articleManagementService.retrieveArticleById(id);
+	}
+	
+	@GetMapping("/articles/{id}/related")
+	public List<Articles> retrieveRelatedArticleById(@PathVariable Integer id) {
+		logger.info("Entry to retrieveRelatedArticleById Api EndPoint {}", id);
+		return articleManagementService.retrieveRelatedArticlesById(id);
 	}
 
 	public List<Comment> attachUserToComment(List<Comment> comments) {

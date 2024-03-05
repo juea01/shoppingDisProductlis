@@ -83,8 +83,8 @@ public class ArticleManagementService {
 	}
 	
 	
-	public Articles retriveArticleById(Integer id) {
-		logger.info("Entry to retriveArticleById");
+	public Articles retrieveArticleById(Integer id) {
+		logger.info("Entry to retrieveArticleById");
 
 		// URI uri =
 		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
@@ -110,10 +110,78 @@ public class ArticleManagementService {
 			
 			attachPreviousAndNextArticle(articles);
 
-			logger.info("Returning article {} and exiting from retriveArticleById", id);
+			logger.info("Returning article {} and exiting from retrieveArticleById", id);
 			return articles;
 		}
 
+	}
+	
+	public List<Articles> retrieveRelatedArticlesById(Integer id) {
+		logger.info("Entry to retrieveRelatedArticlesById {}", id);
+
+		Optional<Articles> article = articleRepository.findById(id);
+
+		if (article.isEmpty()) {
+			logger.info("Article with given id {} not found", id);
+			return null;
+		} else {
+
+			Articles articles = article.get();
+			List<Articles> articlesToReturn = new ArrayList<Articles>();
+			
+			addPreviousArticle(articlesToReturn, articles.getPreviousArticle());
+			Articles art = new Articles();
+			art.setId(articles.getId());
+			art.setCategory(articles.getCategory());
+			art.setSubcategory(articles.getSubcategory());
+			art.setTitle(articles.getTitle());
+			articlesToReturn.add(art);
+			addNextArticle(articlesToReturn, articles.getNextArticle());
+
+			logger.info("Returning {} related articles for given article id {} and exiting from retrieveRelatedArticlesById",articlesToReturn.size(), id);
+			return articlesToReturn;
+		}
+
+	}
+	
+	private void addPreviousArticle(List<Articles> articlesToReturn, Articles previousArticle) {
+		logger.debug("Entry to addPreviousArticle");
+		if(previousArticle != null) {
+			logger.debug("Previous Article Id value is {}", previousArticle.getId());
+			Articles art = new Articles();
+			art.setId(previousArticle.getId());
+			art.setCategory(previousArticle.getCategory());
+			art.setSubcategory(previousArticle.getSubcategory());
+			art.setTitle(previousArticle.getTitle());
+			/**
+			 * Even though adding element at specified index with underlying Array data structure can have performance impact,
+			 * assumption is that maximum subsequent previous articles size should not be more than 30 articles and therefore performance impact could be
+			 * negligible.
+			 */
+			articlesToReturn.add(0,art);
+			
+			addPreviousArticle(articlesToReturn, previousArticle.getPreviousArticle());
+		} else {
+			logger.debug("Exiting from addPreviousArticle as previous Article is null");
+		}
+		
+	}
+	
+	private void addNextArticle(List<Articles> articlesToReturn, Articles nextArticle) {
+		logger.debug("Entry to addNextArticle");
+		if(nextArticle != null) {
+			logger.debug("Next Article Id value is {}", nextArticle.getId());
+			Articles art = new Articles();
+			art.setId(nextArticle.getId());
+			art.setCategory(nextArticle.getCategory());
+			art.setSubcategory(nextArticle.getSubcategory());
+			art.setTitle(nextArticle.getTitle());
+			articlesToReturn.add(art);
+			
+			addNextArticle(articlesToReturn, nextArticle.getNextArticle());
+		} else {
+			logger.debug("Exiting from addNextArticle as next Article is null");
+		}
 	}
 
 	@Transactional
