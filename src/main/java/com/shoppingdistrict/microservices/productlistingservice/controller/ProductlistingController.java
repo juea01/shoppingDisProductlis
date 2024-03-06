@@ -189,32 +189,8 @@ public class ProductlistingController {
 
 	@GetMapping("/articles")
 	public List<Articles> retrieveAllArticles() {
-		logger.info("Entry to retriveAllArticles");
-
-		// List<Articles> articles =
-		// articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
-		List<Articles> articles = articleRepository.findByIsPublishOrderByPublishDateDesc(true);
-		logger.info("Size of all articles", articles.size());
-
-		List<Articles> articlesToReturn = new ArrayList<Articles>();
-		for (Articles a : articles) {
-			Articles art = new Articles();
-			art.setId(a.getId());
-			art.setCategory(a.getCategory());
-			art.setSubcategory(a.getSubcategory());
-			art.setTitle(a.getTitle());
-			art.setPublish(a.isPublish());
-			art.setIntroduction(a.getIntroduction());
-			art.setImages(a.getImages());
-
-			art.setUser(a.getUser());
-			attachUserToArticle(art);
-
-			articlesToReturn.add(art);
-		}
-
-		logger.info("Returning articles and exiting from retriveAllArticles");
-		return articlesToReturn;
+		logger.info("Entry to retriveAllArticles Api EndPoint");
+		return articleManagementService.retrieveAllArticles();
 
 	}
 
@@ -234,6 +210,7 @@ public class ProductlistingController {
 			art.setTitle(a.getTitle());
 			art.setIntroduction(a.getIntroduction());
 			art.setImages(a.getImages());
+			art.setPremium(a.isPremium());
 			art.setPublish(a.isPublish());
 			articlesToReturn.add(art);
 		}
@@ -303,7 +280,7 @@ public class ProductlistingController {
 		logger.info("Entry to retrieveArticleById Api EndPoint {}", id);
 		return articleManagementService.retrieveArticleById(id);
 	}
-	
+
 	@GetMapping("/articles/{id}/related")
 	public List<Articles> retrieveRelatedArticleById(@PathVariable Integer id) {
 		logger.info("Entry to retrieveRelatedArticleById Api EndPoint {}", id);
@@ -469,45 +446,9 @@ public class ProductlistingController {
 	}
 
 	@GetMapping("/articles/subcategory/{subCategory}")
-	public List<Articles> retriveArticleBySubCategory(@PathVariable String subCategory) {
-		logger.info("Entry to retriveArticleBySubCategory {}", subCategory);
-
-		// URI uri =
-		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-		// .toUri();
-
-		List<Articles> articles = articleRepository.findByIsPublishAndSubcategory(true, subCategory);
-
-		if (articles.isEmpty()) {
-			logger.info("Article with given sub category {} not found", subCategory);
-			return null;
-		} else {
-
-			/**
-			 * TODO: In future it would be good idea to have DTO classes rather than using
-			 * Database model classes for transporting data
-			 */
-			logger.info("Number of articles found {} with given subcategory", articles.size());
-
-			List<Articles> articlesToReturn = new ArrayList<Articles>();
-
-			for (Articles a : articles) {
-				Articles art = new Articles();
-				art.setId(a.getId());
-				art.setCategory(a.getCategory());
-				art.setSubcategory(a.getSubcategory());
-				art.setTitle(a.getTitle());
-				art.setIntroduction(a.getIntroduction());
-				art.setImages(a.getImages());
-				art.setUser(a.getUser());
-				art.setPublish(a.isPublish());
-				attachUserToArticle(art);
-				articlesToReturn.add(art);
-			}
-			logger.info("Returning articles and exiting from retriveArticleBySubCategory");
-			return articlesToReturn;
-		}
-
+	public List<Articles> retrieveArticleBySubCategory(@PathVariable String subCategory) {
+		logger.info("Entry to retrieveArticleBySubCategory Api Endpoint {}", subCategory);
+		return articleManagementService.retrieveArticleBySubCategory(subCategory);
 	}
 
 	@GetMapping("/articles/search/{searchCategory}")
