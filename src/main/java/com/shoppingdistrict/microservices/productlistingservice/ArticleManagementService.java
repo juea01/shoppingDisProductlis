@@ -97,7 +97,6 @@ public class ArticleManagementService {
 		} else {
 
 			Articles articles = article.get();
-			
 
 			/**
 			 * TODO: In future it would be good idea to have DTO classes rather than using
@@ -146,6 +145,46 @@ public class ArticleManagementService {
 			return articlesToReturn;
 		}
 
+	}
+
+	public List<Articles> searchAllArticles(String searchCategory) {
+		//TODO: THis is JUST FYI // URI uri =
+		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
+		// .toUri();
+		logger.info("Entry to searchAllArticles with given search word {}", searchCategory);
+		List<Articles> articles = articleRepository.searchBySimilarTitleOrCategoryOrSubcategoryAndIsPublish(searchCategory,
+				true);
+
+		if (articles.isEmpty()) {
+			logger.info("Article with given search value {} not found", searchCategory);
+			return null;
+		} else {
+
+			/**
+			 * TODO: In future it would be good idea to have DTO classes rather than using
+			 * Database model classes for transporting data
+			 */
+
+			List<Articles> articlesToReturn = new ArrayList<Articles>();
+
+			for (Articles a : articles) {
+				Articles art = new Articles();
+				art.setId(a.getId());
+				art.setCategory(a.getCategory());
+				art.setSubcategory(a.getSubcategory());
+				art.setTitle(a.getTitle());
+				art.setPremium(a.isPremium());
+				art.setPublish(a.isPublish());
+				art.setIntroduction(a.getIntroduction());
+				art.setImages(a.getImages());
+
+				art.setUser(a.getUser());
+				attachUserToArticle(art);
+				articlesToReturn.add(art);
+			}
+			logger.info("Returning  {} articles and exiting from searchAllArticles", articlesToReturn.size());
+			return articlesToReturn;
+		}
 	}
 
 	public List<Articles> retrieveAllArticles() {

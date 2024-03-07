@@ -453,41 +453,8 @@ public class ProductlistingController {
 
 	@GetMapping("/articles/search/{searchCategory}")
 	public List<Articles> searchArticle(@PathVariable String searchCategory) {
-		logger.info("Entry to searchArticle");
-
-		// URI uri =
-		// ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(savedProduct.getId())
-		// .toUri();
-
-		List<Articles> articles = articleRepository.findByTitleLikeOrCategoryLikeOrSubcategoryLike(searchCategory,
-				searchCategory, searchCategory);
-
-		if (articles.isEmpty()) {
-			logger.info("Article with given search value {} not found", searchCategory);
-			return null;
-		} else {
-
-			/**
-			 * TODO: In future it would be good idea to have DTO classes rather than using
-			 * Database model classes for transporting data
-			 */
-
-			List<Articles> articlesToReturn = new ArrayList<Articles>();
-
-			for (Articles a : articles) {
-				Articles art = new Articles();
-				art.setId(a.getId());
-				art.setCategory(a.getCategory());
-				art.setSubcategory(a.getSubcategory());
-				art.setTitle(a.getTitle());
-				art.setIntroduction(a.getIntroduction());
-				art.setImages(a.getImages());
-				articlesToReturn.add(art);
-			}
-			logger.info("Returning article {} and exiting from searchArticle", searchCategory);
-			return articlesToReturn;
-		}
-
+		logger.info("Entry to searchArticle  Api EndPoint");
+		return articleManagementService.searchAllArticles(searchCategory);
 	}
 
 	@PostMapping("/articles")
