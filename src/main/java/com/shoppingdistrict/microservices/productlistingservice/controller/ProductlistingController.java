@@ -187,10 +187,10 @@ public class ProductlistingController {
 		return ResponseEntity.ok("{\"message\":\"Image deleted sucessfully\"}");
 	}
 
-	@GetMapping("/articles")
-	public List<Articles> retrieveAllArticles() {
+	@GetMapping("/articles/{excludeCaseStudyArticles}/{excludeLearningArticles}")
+	public List<Articles> retrieveAllArticles(@PathVariable boolean excludeCaseStudyArticles, @PathVariable boolean excludeLearningArticles) {
 		logger.info("Entry to retriveAllArticles Api EndPoint");
-		return articleManagementService.retrieveAllArticles();
+		return articleManagementService.retrieveAllArticles(excludeCaseStudyArticles, excludeLearningArticles);
 
 	}
 
@@ -226,22 +226,7 @@ public class ProductlistingController {
 		return articleManagementService.getArticlesIdAndTitleByTitle(title);
 	}
 
-	public void attachUserToArticle(Articles article) {
-		logger.info("Entry to attachUserToArticle");
-		Users user = new Users();
-		Users artUser = article.getUser();
-		if (artUser != null) {
-			user.setId(artUser.getId());
-			user.setUsername(article.getUser().getUsername());
-			article.setUser(user);
-		} else {
-			logger.info("Can't retrieve associated user for this article {}", article.getId());
-			article.setUser(null);
-		}
-
-		logger.info("Exiting from attachUserToArticle");
-
-	}
+	
 
 	public void attachUserToSubject(List<Subject> subjects, Subject subject) {
 		logger.info("Entry to attachUserToSubject");
@@ -450,6 +435,12 @@ public class ProductlistingController {
 		logger.info("Entry to retrieveArticleBySubCategory Api Endpoint {}", subCategory);
 		return articleManagementService.retrieveArticleBySubCategory(subCategory);
 	}
+	
+	@GetMapping("/articles/category/{category}")
+	public List<Articles> retrieveArticleByCategory(@PathVariable String category) {
+		logger.info("Entry to retrieveArticleByCategory Api Endpoint {}");
+		return articleManagementService.retrieveArticleByCategory(category);
+	}
 
 	@GetMapping("/articles/search/{searchCategory}")
 	public List<Articles> searchArticle(@PathVariable String searchCategory) {
@@ -462,7 +453,6 @@ public class ProductlistingController {
 		logger.info("Entry to createArticle Api Endpoint");
 		logger.info("Title of Article to be created {}", article.getTitle());
 		return articleManagementService.createArticle(article);
-
 	}
 
 	// TODO: Shall try and catch here or let error handling component to handle

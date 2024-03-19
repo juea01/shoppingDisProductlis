@@ -19,6 +19,7 @@ import com.shoppingdistrict.microservices.model.model.Comment;
 import com.shoppingdistrict.microservices.model.model.Users;
 import com.shoppingdistrict.microservices.productlistingservice.controller.ProductlistingController;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ArticleRepository;
+import com.shoppingdistrict.microservices.productlistingservice.MyConstant;
 
 @Service
 @Transactional
@@ -187,12 +188,21 @@ public class ArticleManagementService {
 		}
 	}
 
-	public List<Articles> retrieveAllArticles() {
-		logger.info("Entry to retrieveAllArticles ");
+	public List<Articles> retrieveAllArticles(boolean excludeCaseStudyArticles, boolean excludeLearningArticles) {
+		logger.info("Entry to retrieveAllArticles, exclude Case Study {} and exclude Learning {} ", excludeCaseStudyArticles, excludeLearningArticles);
 
 		// List<Articles> articles =
 		// articleRepository.findAll(Sort.by(Sort.Direction.DESC,"publishDate"));
-		List<Articles> articles = articleRepository.findByIsPublishOrderByPublishDateDesc(true);
+		List<Articles> articles = null;
+		
+		if (excludeCaseStudyArticles) {
+			articles = articleRepository.findByIsPublishAndCategoryNotLikeOrderByPublishDateDesc(true, MyConstant.Category.CaseStudy.toString() );
+		} else if (excludeLearningArticles && !excludeCaseStudyArticles) {
+			articles = articleRepository.findByIsPublishAndCategoryLikeOrderByPublishDateDesc(true, MyConstant.Category.CaseStudy.toString() );
+		} else {
+			articles = articleRepository.findByIsPublishOrderByPublishDateDesc(true);
+		}
+		
 		logger.info("Size of all articles", articles.size());
 
 		List<Articles> articlesToReturn = new ArrayList<Articles>();
@@ -251,6 +261,43 @@ public class ArticleManagementService {
 				articlesToReturn.add(art);
 			}
 			logger.info("Returning articles and exiting from retrieveArticleBySubCategory");
+			return articlesToReturn;
+		}
+	}
+	
+	public List<Articles> retrieveArticleByCategory(String category) {
+		logger.info("Entry to retrieveArticleByCategory {}", category);
+
+		List<Articles> articles = articleRepository.findByIsPublishAndCategory(true, category);
+
+		if (articles.isEmpty()) {
+			logger.info("Article with given  category {} not found", category);
+			return null;
+		} else {
+
+			/**
+			 * TODO: In future it would be good idea to have DTO classes rather than using
+			 * Database model classes for transporting data
+			 */
+			logger.info("Number of articles found {} with given subcategory", articles.size());
+
+			List<Articles> articlesToReturn = new ArrayList<Articles>();
+
+			for (Articles a : articles) {
+				Articles art = new Articles();
+				art.setId(a.getId());
+				art.setCategory(a.getCategory());
+				art.setSubcategory(a.getSubcategory());
+				art.setTitle(a.getTitle());
+				art.setIntroduction(a.getIntroduction());
+				art.setPremium(a.isPremium());
+				art.setImages(a.getImages());
+				art.setUser(a.getUser());
+				art.setPublish(a.isPublish());
+				attachUserToArticle(art);
+				articlesToReturn.add(art);
+			}
+			logger.info("Returning articles and exiting from retrieveArticleByCategory");
 			return articlesToReturn;
 		}
 	}
@@ -351,7 +398,7 @@ public class ArticleManagementService {
 	}
 
 	/** Helper methods **/
-	public void attachUserToArticle(Articles article) {
+	private void attachUserToArticle(Articles article) {
 		logger.info("Entry to attachUserToArticle");
 		Users user = new Users();
 		Users artUser = article.getUser();
