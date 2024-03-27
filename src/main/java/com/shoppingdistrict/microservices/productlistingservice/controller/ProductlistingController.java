@@ -384,6 +384,7 @@ public class ProductlistingController {
 			for (Question qu : questions) {
 				Articles article = new Articles();
 				article.setId(qu.getArticle().getId());
+				article.setTitle(qu.getArticle().getTitle());
 				qu.setArticle(article);
 			}
 		}
@@ -391,6 +392,7 @@ public class ProductlistingController {
 		if (question != null) {
 			Articles article = new Articles();
 			article.setId(question.getArticle().getId());
+			article.setTitle(question.getArticle().getTitle());
 			question.setArticle(article);
 		}
 
