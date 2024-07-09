@@ -40,7 +40,7 @@ class ProductlistingserviceApplicationTests {
 		Articles article = new Articles();
 		article.setTitle("Testing");
 		Articles savedArticle = articleRepository.saveAndFlush(article);
-		System.out.println(savedArticle.getId());
+		System.out.println("Running test case testGetArticleById for article id "+savedArticle.getId());
 		//assertNotNull(articleManagementService.retrieveArticleById(savedArticle.getId()));
 		assertNotNull(savedArticle.getTitle());
 	}
