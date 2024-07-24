@@ -136,6 +136,7 @@ public class ArticleManagementService {
 			art.setSubcategory(articles.getSubcategory());
 			art.setTitle(articles.getTitle());
 			art.setPublish(articles.isPublish());
+			art.setLectureType(articles.getLectureType());
 			art.setPremium(articles.isPremium());
 			articlesToReturn.add(art);
 			addNextArticle(articlesToReturn, articles.getNextArticle());
