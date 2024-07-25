@@ -312,6 +312,7 @@ public class ArticleManagementService {
 			art.setCategory(previousArticle.getCategory());
 			art.setSubcategory(previousArticle.getSubcategory());
 			art.setTitle(previousArticle.getTitle());
+			art.setLectureType(previousArticle.getLectureType());
 			art.setPremium(previousArticle.isPremium());
 			art.setPublish(previousArticle.isPublish());
 			/**
@@ -338,6 +339,7 @@ public class ArticleManagementService {
 			art.setCategory(nextArticle.getCategory());
 			art.setSubcategory(nextArticle.getSubcategory());
 			art.setTitle(nextArticle.getTitle());
+			art.setLectureType(nextArticle.getLectureType());
 			art.setPremium(nextArticle.isPremium());
 			art.setPublish(nextArticle.isPublish());
 			articlesToReturn.add(art);
