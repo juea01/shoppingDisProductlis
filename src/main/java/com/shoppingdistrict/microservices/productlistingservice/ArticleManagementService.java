@@ -362,6 +362,8 @@ public class ArticleManagementService {
 		existingArticles.get().setFirstParagraph(article.getFirstParagraph());
 		existingArticles.get().setSecondParagraph(article.getSecondParagraph());
 		existingArticles.get().setConclusion(article.getConclusion());
+		existingArticles.get().setLink(article.getLink());
+		existingArticles.get().setLectureType(article.getLectureType());
 		existingArticles.get().setPremium(article.isPremium());
 		existingArticles.get().setPublish(article.isPublish());
 		existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
@@ -393,6 +395,8 @@ public class ArticleManagementService {
 		articlesToReturn.setIntroduction(updatedArticle.getIntroduction());
 		articlesToReturn.setPremium(updatedArticle.isPremium());
 		articlesToReturn.setImages(updatedArticle.getImages());
+		articlesToReturn.setLectureType(updatedArticle.getLectureType());
+		articlesToReturn.setLink(updatedArticle.getLink());
 
 		logger.info("Returning newly updated article id {} and exiting from updateArticle", updatedArticle.getId(),
 				articlesToReturn);
