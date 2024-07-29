@@ -364,6 +364,7 @@ public class ArticleManagementService {
 		existingArticles.get().setConclusion(article.getConclusion());
 		existingArticles.get().setLink(article.getLink());
 		existingArticles.get().setLectureType(article.getLectureType());
+		existingArticles.get().setRecTest(article.getRecTest());
 		existingArticles.get().setPremium(article.isPremium());
 		existingArticles.get().setPublish(article.isPublish());
 		existingArticles.get().setLastEditDate(new Timestamp(System.currentTimeMillis()));
