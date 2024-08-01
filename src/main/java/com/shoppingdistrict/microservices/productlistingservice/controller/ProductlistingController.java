@@ -50,7 +50,10 @@ import com.shoppingdistrict.microservices.productlistingservice.repository.Artic
 import com.shoppingdistrict.microservices.productlistingservice.repository.ArticleRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.CommentRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.CompletedQuestionRepository;
+import com.shoppingdistrict.microservices.productlistingservice.repository.EdgeDTO;
+import com.shoppingdistrict.microservices.productlistingservice.repository.GraphDataDTO;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ImageRepository;
+import com.shoppingdistrict.microservices.productlistingservice.repository.NodeDTO;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ProductRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.QuestionRepository;
 import com.shoppingdistrict.microservices.productlistingservice.repository.ReplyRepository;
@@ -124,6 +127,92 @@ public class ProductlistingController {
 		return product;
 	}
 
+	/**
+	 *TODO: Node data are populated manually as no functionalities for admin to create through UI yet.
+	 * @return
+	 */
+	@GetMapping("/learningpath/{name}")
+	public GraphDataDTO retrieveLearningPath(@PathVariable String name) {
+		logger.info("Entry to retrieveLearningPath for {}", name);
+		
+		GraphDataDTO graphDataDTO = new GraphDataDTO();
+		
+		if (name.equalsIgnoreCase("WebDev1")) {
+
+			List<NodeDTO> nodes = new ArrayList<NodeDTO>();
+			NodeDTO nodeDTO = new NodeDTO();
+			nodeDTO.setId(10);
+			nodeDTO.setName("Java Series 1");
+			
+			NodeDTO nodeDTOJS = new NodeDTO();
+			nodeDTOJS.setId(3);
+			nodeDTOJS.setName("Intro To Javascript");
+			
+			NodeDTO nodeDTOHTML = new NodeDTO();
+			nodeDTOHTML.setId(1);
+			nodeDTOHTML.setName("Introduction To HTML");
+			
+			
+			
+			// Id need to change here
+
+			NodeDTO nodeDTO2 = new NodeDTO();
+			nodeDTO2.setId(13);
+			nodeDTO2.setName("Java Series 2");
+			
+			NodeDTO nodeDTOWeb = new NodeDTO();
+			nodeDTOWeb.setId(14);
+			nodeDTOWeb.setName("Web Application Dev Series 1");
+		
+			
+			nodes.add(nodeDTO);
+			nodes.add(nodeDTO2);
+			nodes.add(nodeDTOJS);
+			nodes.add(nodeDTOWeb);
+			nodes.add(nodeDTOHTML);
+			
+			List<EdgeDTO> edges = new ArrayList<EdgeDTO>();
+			
+			EdgeDTO java1_Java2 = new EdgeDTO();
+			java1_Java2.setId(55);
+			java1_Java2.setSource(10);
+			java1_Java2.setTarget(13);	
+			
+			EdgeDTO java2_Web = new EdgeDTO();
+			java2_Web.setId(56);
+			java2_Web.setSource(13);
+			java2_Web.setTarget(14);
+			
+			EdgeDTO js_Web = new EdgeDTO();
+			js_Web.setId(57);
+			js_Web.setSource(3);
+			js_Web.setTarget(14);
+			
+			EdgeDTO js_HTML = new EdgeDTO();
+			js_HTML.setId(58);
+			js_HTML.setSource(1);
+			js_HTML.setTarget(14);
+			
+			
+			edges.add(java1_Java2);
+			edges.add(java2_Web);
+			edges.add(js_Web);
+			edges.add(js_HTML);
+			
+			
+			graphDataDTO.setNodes(nodes);
+			graphDataDTO.setEdges(edges);
+			
+		} else {
+			logger.info("Learning Path for {} is still under development.", name);
+		}
+		
+
+
+		logger.info("Returning GraphData {} and exiting from retrieveLearningPath", graphDataDTO);
+		return graphDataDTO;
+	}
+
 	@PostMapping("/products")
 	public ResponseEntity<Products> createProduct(@Valid @RequestBody Products product) {
 		logger.info("Entry to createProduct");
@@ -188,7 +277,8 @@ public class ProductlistingController {
 	}
 
 	@GetMapping("/articles/{excludeCaseStudyArticles}/{excludeLearningArticles}")
-	public List<Articles> retrieveAllArticles(@PathVariable boolean excludeCaseStudyArticles, @PathVariable boolean excludeLearningArticles) {
+	public List<Articles> retrieveAllArticles(@PathVariable boolean excludeCaseStudyArticles,
+			@PathVariable boolean excludeLearningArticles) {
 		logger.info("Entry to retriveAllArticles Api EndPoint");
 		return articleManagementService.retrieveAllArticles(excludeCaseStudyArticles, excludeLearningArticles);
 
@@ -225,8 +315,6 @@ public class ProductlistingController {
 		logger.info("Entry to getArticlesIdAndTitleByTitle, {}", title);
 		return articleManagementService.getArticlesIdAndTitleByTitle(title);
 	}
-
-	
 
 	public void attachUserToSubject(List<Subject> subjects, Subject subject) {
 		logger.info("Entry to attachUserToSubject");
@@ -437,7 +525,7 @@ public class ProductlistingController {
 		logger.info("Entry to retrieveArticleBySubCategory Api Endpoint {}", subCategory);
 		return articleManagementService.retrieveArticleBySubCategory(subCategory);
 	}
-	
+
 	@GetMapping("/articles/category/{category}")
 	public List<Articles> retrieveArticleByCategory(@PathVariable String category) {
 		logger.info("Entry to retrieveArticleByCategory Api Endpoint {}");
